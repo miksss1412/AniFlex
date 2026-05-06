@@ -51,8 +51,9 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                 src={streams[streamIdx]}
                 className={`${styles.iframe} ${loaded ? styles.iframeVisible : ''}`}
                 allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation"
+                referrerPolicy="no-referrer"
                 onLoad={() => setLoaded(true)}
                 title={`${title} - Episode ${epNum}`}
                 id="anime-player"
