@@ -182,25 +182,22 @@ export function getStreamUrl(malId, episode = 1) {
 // Fallback embed URLs (try in order if first fails)
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null) {
   const fallbacks = [
-    // 1. VidAPI (Modern & Fast)
-    `https://vidapi.net/embed/anime/${malId}/${episode}`,
-    
-    // 2. VidSrc PRO (Very stable mirror)
-    `https://vidsrc.pro/embed/anime/${malId}/${episode}`,
-    
-    // 3. VidLink (Premium feel, often works well)
-    `https://vidlink.pro/embed/anime/${malId}?episode=${episode}`,
-    
-    // 4. VidSrc.to
+    // 1. VidSrc.to (The current #1 most stable)
     `https://vidsrc.to/embed/anime/${anilistId || malId}/${episode}`,
+    
+    // 2. VidSrc.me (High compatibility backup)
+    `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episode}`,
+    
+    // 3. VidSrc.cc (Modern & Fast)
+    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
 
-    // 5. SuperEmbed (Direct Proxy)
-    `https://multiembed.mov/directstream.php?video_id=${anilistId || malId}&tmdb=0&s=1&e=${episode}`,
-
-    // 6. AutoEmbed
+    // 4. AutoEmbed (Reliable cloud backup)
     `https://player.autoembed.cc/embed/anime/${malId}/${episode}`,
 
-    // 7. 2Embed
+    // 5. VidSrc.xyz
+    `https://vidsrc.xyz/embed/anime?mal=${malId}&ep=${episode}`,
+
+    // 6. 2Embed
     `https://www.2embed.cc/embed/anime/${malId}/${episode}`,
   ];
   return fallbacks.filter(Boolean);
