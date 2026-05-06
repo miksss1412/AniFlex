@@ -182,20 +182,20 @@ export function getStreamUrl(malId, episode = 1) {
 // Fallback embed URLs (try in order if first fails)
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null) {
   const fallbacks = [
-    // 1. VidSrc.to (The current #1 most stable)
+    // 1. VidLink (Best Accuracy - Uses MAL/AniList perfectly)
+    `https://vidlink.pro/embed/anime/${malId}?episode=${episode}`,
+    
+    // 2. VidSrc.to (Uses AniList ID for best accuracy)
     `https://vidsrc.to/embed/anime/${anilistId || malId}/${episode}`,
     
-    // 2. VidSrc.me (High compatibility backup)
+    // 3. VidSrc.me (Uses MAL ID)
     `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episode}`,
-    
-    // 3. VidSrc.cc (Modern & Fast)
-    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
 
-    // 4. AutoEmbed (Reliable cloud backup)
+    // 4. AutoEmbed (Uses MAL ID)
     `https://player.autoembed.cc/embed/anime/${malId}/${episode}`,
 
-    // 5. VidSrc.xyz
-    `https://vidsrc.xyz/embed/anime?mal=${malId}&ep=${episode}`,
+    // 5. VidSrc.cc
+    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
 
     // 6. 2Embed
     `https://www.2embed.cc/embed/anime/${malId}/${episode}`,
