@@ -1,0 +1,15 @@
+.section { animation: fadeInUp 0.5s ease; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.viewMore {
+  font-size: 0.85rem;
+  color: var(--teal-mid);
+  flex-shrink: 0;
+}
+.viewMore:hover { color: var(--teal-glow); }
