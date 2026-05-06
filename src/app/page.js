@@ -5,6 +5,9 @@ import HeroSection from '@/components/HeroSection/HeroSection';
 import AnimeSection from '@/components/AnimeSection/AnimeSection';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'AniFlex — Stream Anime Free',
   description: 'Discover and watch thousands of anime series for free. Browse trending, seasonal, and top-rated anime on AniFlex.',
