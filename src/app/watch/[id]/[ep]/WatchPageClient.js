@@ -13,7 +13,6 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
   const streams = getStreamUrlFallbacks(animeId, epNum, anilistId, anime?.title_english || anime?.title || '');
   console.log('[WatchPageClient] Stream URLs:', streams);
   const [streamIdx, setStreamIdx] = useState(0);
-  const [loaded, setLoaded]       = useState(false);
 
   const prevEp = epNum > 1 ? epNum - 1 : null;
   const nextEp = total && epNum < total ? epNum + 1 : null;
@@ -40,19 +39,12 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
 
             {/* Player */}
             <div className={styles.playerWrap}>
-              {!loaded && (
-                <div className={styles.playerLoading}>
-                  <div className={styles.loadingSpinner} />
-                  <p>Loading stream…</p>
-                </div>
-              )}
               <iframe
                 key={streams[streamIdx]}
                 src={streams[streamIdx]}
-                className={`${styles.iframe} ${loaded ? styles.iframeVisible : ''}`}
+                className={styles.iframe}
                 allowFullScreen
                 allow="autoplay; encrypted-media; picture-in-picture"
-                onLoad={() => setLoaded(true)}
                 title={`${title} - Episode ${epNum}`}
                 id="anime-player"
               />
@@ -63,7 +55,7 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                 <div style={{display:'flex', gap:'10px'}}>
                   <button 
                     className={styles.refreshBtn} 
-                    onClick={() => { setLoaded(false); const s = streams[streamIdx]; setStreamIdx(-1); setTimeout(()=>setStreamIdx(streams.indexOf(s)), 50); }}
+                    onClick={() => { const s = streams[streamIdx]; setStreamIdx(-1); setTimeout(()=>setStreamIdx(streams.indexOf(s)), 50); }}
                     title="Refresh Player"
                   >
                     🔄
