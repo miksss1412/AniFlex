@@ -10,7 +10,7 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
   const total  = anime?.episodes || episodes?.length || 0;
   const title  = anime?.title_english || anime?.title || `Anime ${animeId}`;
   const covers  = anime?.images?.jpg?.large_image_url;
-  const streams = getStreamUrlFallbacks(animeId, epNum, anilistId);
+  const streams = getStreamUrlFallbacks(animeId, epNum, anilistId, anime?.title_english || anime?.title || '');
   console.log('[WatchPageClient] Stream URLs:', streams);
   const [streamIdx, setStreamIdx] = useState(0);
   const [loaded, setLoaded]       = useState(false);

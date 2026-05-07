@@ -180,15 +180,22 @@ export function getStreamUrl(malId, episode = 1) {
 }
 
 // Fallback embed URLs (try in order if first fails)
-export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null) {
-  const fallbacks = [
-    // 1. VidSrc.cc (Verified 200 OK for One Piece MAL ID 21)
-    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
+export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, title = "") {
+  // Generate a URL-friendly slug from the anime title (e.g., "One Piece" -> "one-piece")
+  const slug = title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
 
-    // 2. VidLink (Very accurate, but One Piece mapping might be broken)
+  const fallbacks = [
+    // 1. GoLoad / Vidstreaming (Slug-based, highly reliable for popular shows like One Piece)
+    slug ? `https://goload.pro/streaming.php?id=${slug}-episode-${episode}` : null,
+    slug ? `https://gogohd.net/streaming.php?id=${slug}-episode-${episode}` : null,
+
+    // 3. VidLink (Very accurate, but One Piece mapping might be broken)
     `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true`,
+
+    // 4. VidSrc.cc (Currently having Cloudflare iframe blocks, but good fallback)
+    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
     
-    // 3. 2Embed (Legacy fallback)
+    // 5. 2Embed (Legacy fallback)
     `https://www.2embed.cc/embed/anime/${malId}/${episode}`,
   ];
   return fallbacks.filter(Boolean);
