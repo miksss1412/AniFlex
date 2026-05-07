@@ -57,52 +57,141 @@ async function anilistFetch(query, variables = {}) {
   }
 }
 
-// ─── Public API Calls ─────────────────────────────────────
+// ─── Public API Calls (Now powered by AniList) ───────────────
 
-export async function getTrendingAnime(page = 1) {
-  const data = await jikanFetch(`/top/anime?filter=airing&page=${page}&limit=20`);
-  return data?.data || [];
+const ANIME_QUERY_FIELDS = `
+  id
+  idMal
+  title { romaji english native }
+  coverImage { extraLarge large color }
+  bannerImage
+  averageScore
+  episodes
+  status
+  format
+  season
+  seasonYear
+  genres
+  description(asHtml: false)
+`;
+
+export async function getTrendingAnime(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+          ${ANIME_QUERY_FIELDS}
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
 }
 
-export async function getPopularAnime(page = 1) {
-  const data = await jikanFetch(`/top/anime?filter=bypopularity&page=${page}&limit=24`);
-  return data?.data || [];
+export async function getPopularAnime(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          ${ANIME_QUERY_FIELDS}
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
 }
 
-export async function getTopRatedAnime(page = 1) {
-  const data = await jikanFetch(`/top/anime?page=${page}&limit=24`);
-  return data?.data || [];
+export async function getSeasonalAnime(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(status: RELEASING, sort: START_DATE_DESC, type: ANIME, isAdult: false) {
+          ${ANIME_QUERY_FIELDS}
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
 }
 
-export async function getSeasonalAnime() {
-  const data = await jikanFetch('/seasons/now?limit=24');
-  return data?.data || [];
+export async function getUpcomingAnime(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(status: NOT_YET_RELEASED, sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+          ${ANIME_QUERY_FIELDS}
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
 }
 
-export async function getUpcomingAnime() {
-  const data = await jikanFetch('/top/anime?filter=upcoming&limit=24');
-  return data?.data || [];
+export async function getRecentAnime(page = 1, perPage = 20) {
+  // Using Airing Schedule for recently updated episodes
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        airingSchedules(sort: TIME_DESC, airingAt_lesser: ${Math.floor(Date.now()/1000)}) {
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.airingSchedules?.map(item => item.media) || [];
 }
 
 export async function getSchedules() {
-  // Returns current day's schedule by default
-  const data = await jikanFetch('/schedules?limit=24');
-  return data?.data || [];
+  // Get anime airing in the next 24 hours
+  const now = Math.floor(Date.now() / 1000);
+  const tomorrow = now + 86400;
+  const QUERY = `
+    query ($now: Int, $tomorrow: Int) {
+      Page(page: 1, perPage: 20) {
+        airingSchedules(airingAt_greater: $now, airingAt_lesser: $tomorrow, sort: TIME) {
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { now, tomorrow });
+  return data?.Page?.airingSchedules?.map(item => item.media) || [];
 }
 
-export async function getRecentAnime() {
-  const data = await jikanFetch('/watch/episodes?limit=24');
-  // Return the anime entry from each episode update
-  return data?.data?.map(item => item.entry) || [];
-}
+export async function searchAnime(q, { page = 1, genres = [], type = '', status = '', sort = 'SEARCH_MATCH' } = {}) {
+  const QUERY = `
+    query ($page: Int, $q: String, $genres: [String], $format: [MediaFormat], $status: MediaStatus, $sort: [MediaSort]) {
+      Page(page: $page, perPage: 24) {
+        pageInfo { total currentPage lastPage hasNextPage }
+        media(search: $q, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME, isAdult: false) {
+          ${ANIME_QUERY_FIELDS}
+        }
+      }
+    }
+  `;
+  
+  // Clean up variables
+  const variables = { page, q: q || undefined, genres: genres.length ? genres : undefined, sort: [sort] };
+  if (type) variables.format = [type];
+  if (status) variables.status = status;
 
-export async function searchAnime(q, { page = 1, genres = '', type = '', status = '', order_by = 'popularity', sort = 'desc' } = {}) {
-  const params = new URLSearchParams({ q, page, limit: 24, sfw: true, order_by, sort });
-  if (genres) params.set('genres', genres);
-  if (type)   params.set('type', type);
-  if (status) params.set('status', status);
-  const data = await jikanFetch(`/anime?${params}`);
-  return { results: data?.data || [], pagination: data?.pagination };
+  const data = await anilistFetch(QUERY, variables);
+  return { 
+    results: data?.Page?.media || [], 
+    pagination: {
+      last_visible_page: data?.Page?.pageInfo?.lastPage,
+      has_next_page: data?.Page?.pageInfo?.hasNextPage
+    }
+  };
 }
 
 export async function getAnimeById(id) {

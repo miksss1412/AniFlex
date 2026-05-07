@@ -7,14 +7,14 @@ import styles from './AnimeCard.module.css';
 export default function AnimeCard({ anime, priority = false }) {
   const [imgError, setImgError] = useState(false);
 
-  const id      = anime.mal_id || anime.idMal || anime.id;
-  const title   = anime.title_english || anime.title || anime.name || 'Unknown';
-  const cover   = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || anime.coverImage?.large || anime.coverImage?.medium || '';
-  const score   = anime.score || (anime.averageScore ? (anime.averageScore / 10).toFixed(1) : null);
-  const type    = anime.type || anime.format || '';
+  const id      = anime.idMal || anime.mal_id || anime.id;
+  const title   = anime.title?.english || anime.title?.romaji || anime.title_english || anime.title || anime.name || 'Unknown';
+  const cover   = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
+  const score   = (anime.averageScore ? (anime.averageScore / 10).toFixed(1) : null) || anime.score;
+  const type    = anime.format || anime.type || '';
   const eps     = anime.episodes || anime.episodes?.nodes?.length || '';
   const status  = anime.status || '';
-  const year    = anime.year || anime.aired?.prop?.from?.year || '';
+  const year    = anime.seasonYear || anime.year || anime.aired?.prop?.from?.year || '';
 
   const statusColor =
     status?.toLowerCase().includes('airing') ? 'var(--color-ongoing)' :
