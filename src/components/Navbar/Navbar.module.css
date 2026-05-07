@@ -200,3 +200,88 @@
 .drawerLink:hover { background: rgba(255,255,255,0.06); color: var(--teal-glow); }
 
 .drawerSearch { padding: 8px 0; }
+
+/* Suggestions dropdown */
+.linksPlaceholder {
+  flex: 1;
+}
+
+.suggestionsDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  z-index: 100;
+  animation: fadeInUp 0.15s ease;
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background var(--transition-fast);
+  cursor: pointer;
+}
+
+.suggestionItem:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.suggestionItem:first-child {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.suggestionItem:last-child {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.suggestionImg {
+  width: 40px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.suggestionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.suggestionTitle {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestionMeta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .suggestionsDropdown {
+    width: 100%;
+    left: 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
