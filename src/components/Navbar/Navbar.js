@@ -122,15 +122,6 @@ export default function Navbar() {
           {mobileLinks.map(l => (
             <Link key={l.href} href={l.href} className={styles.drawerLink}>{l.label}</Link>
           ))}
-          <form onSubmit={handleSearch} className={styles.drawerSearch}>
-            <input
-              type="text"
-              placeholder="Search anime..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              className="input"
-            />
-          </form>
         </div>
       )}
     </nav>

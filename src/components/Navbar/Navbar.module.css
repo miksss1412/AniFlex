@@ -76,12 +76,48 @@
 
 /* Search */
 .searchForm { 
-  margin-left: auto; 
+  margin-left: auto;
+  transition: all 0.3s ease;
 }
 
 @media (max-width: 768px) {
+  .inner {
+    gap: 10px;
+  }
   .searchForm {
-    display: none;
+    margin: 0;
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+  }
+  .searchWrap {
+    width: 100%;
+  }
+  .searchInput {
+    width: 100% !important;
+    min-width: 0;
+    padding: 8px 12px 8px 32px;
+    font-size: 0.8rem;
+  }
+  .searchInput:focus {
+    width: 100% !important;
+  }
+  .searchIcon {
+    left: 10px;
+    font-size: 0.75rem;
+  }
+  .logo {
+    gap: 4px;
+  }
+  .logo span:not(.logoIcon) {
+    display: none; /* Hide 'AniFlex' text on very small mobile if needed, or just shrink it */
+  }
+}
+
+/* On medium mobile, show logo text but smaller */
+@media (min-width: 480px) and (max-width: 768px) {
+  .logo span:not(.logoIcon) {
+    display: block;
+    font-size: 1.1rem;
   }
 }
 
