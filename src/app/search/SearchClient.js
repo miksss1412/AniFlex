@@ -118,11 +118,11 @@ export default function SearchClient({ genres = [] }) {
   };
 
   const filterLabel =
-    filter === 'trending' ? '🔥 Trending' :
-    filter === 'popular'  ? '🏆 Popular'  :
-    filter === 'seasonal' ? '📅 Seasonal' : 
-    filter === 'upcoming' ? '🚀 Upcoming' : 
-    filter === 'recent'   ? '🕒 Recently Updated' : '🔍 Browse';
+    filter === 'trending' ? 'Trending' :
+    filter === 'popular'  ? 'Popular'  :
+    filter === 'seasonal' ? 'Seasonal' : 
+    filter === 'upcoming' ? 'Upcoming' : 
+    filter === 'recent'   ? 'Recently Updated' : 'Browse';
 
   return (
     <div className={styles.page}>
@@ -130,20 +130,6 @@ export default function SearchClient({ genres = [] }) {
         {/* Header */}
         <div className={styles.header}>
           <h1 className={styles.heading}>{filterLabel} <span className={styles.accent}>Anime</span></h1>
-
-          {/* Search bar */}
-          <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>🔍</span>
-            <input
-              id="search-input"
-              type="text"
-              placeholder="Search by title…"
-              value={inputVal}
-              onChange={e => handleInputChange(e.target.value)}
-              className={styles.searchInput}
-              autoComplete="off"
-            />
-          </div>
         </div>
 
         {/* Filters row */}
