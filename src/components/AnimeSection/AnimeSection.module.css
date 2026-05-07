@@ -5,15 +5,19 @@
 
 .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .titleWrap {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
+}
+
+.titleWrap :global(.section-title) {
+  margin-bottom: 0; /* Reset global margin */
 }
 
 .viewMore {
