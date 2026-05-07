@@ -1,8 +1,49 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import styles from './Navbar.module.css';
+
+function NavLinks() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentFilter = searchParams.get('filter');
+
+  const navLinks = [
+    { href: '/',         label: 'Home'     },
+    { href: '/search',   label: 'Browse'   },
+    { href: '/search?filter=trending',  label: 'Trending' },
+    { href: '/search?filter=seasonal',  label: 'Seasonal' },
+  ];
+
+  const isActive = (href) => {
+    if (href === '/') return pathname === '/';
+    if (href.includes('?')) {
+      const [path, query] = href.split('?');
+      const params = new URLSearchParams(query);
+      const filter = params.get('filter');
+      return pathname === path && currentFilter === filter;
+    }
+    // For Browse, only active if exactly /search and no filter
+    if (href === '/search') return pathname === '/search' && !currentFilter;
+    return pathname === href;
+  };
+
+  return (
+    <ul className={`${styles.links} hide-mobile`}>
+      {navLinks.map(l => (
+        <li key={l.href}>
+          <Link
+            href={l.href}
+            className={`${styles.link} ${isActive(l.href) ? styles.active : ''}`}
+          >
+            {l.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function Navbar() {
   const [scrolled, setScrolled]   = useState(false);
@@ -25,7 +66,7 @@ export default function Navbar() {
     if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   };
 
-  const navLinks = [
+  const mobileLinks = [
     { href: '/',         label: 'Home'     },
     { href: '/search',   label: 'Browse'   },
     { href: '/search?filter=trending',  label: 'Trending' },
@@ -42,18 +83,9 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Nav Links */}
-        <ul className={`${styles.links} hide-mobile`}>
-          {navLinks.map(l => (
-            <li key={l.href}>
-              <Link
-                href={l.href}
-                className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
-              >
-                {l.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Suspense fallback={<div className={styles.linksPlaceholder} />}>
+          <NavLinks />
+        </Suspense>
 
         {/* Search */}
         <form onSubmit={handleSearch} className={styles.searchForm}>
@@ -87,7 +119,7 @@ export default function Navbar() {
       {/* Mobile Drawer */}
       {menuOpen && (
         <div className={`${styles.drawer} hide-desktop`}>
-          {navLinks.map(l => (
+          {mobileLinks.map(l => (
             <Link key={l.href} href={l.href} className={styles.drawerLink}>{l.label}</Link>
           ))}
           <form onSubmit={handleSearch} className={styles.drawerSearch}>
