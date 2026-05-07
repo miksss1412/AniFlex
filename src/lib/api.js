@@ -79,6 +79,17 @@ export async function getSeasonalAnime() {
   return data?.data || [];
 }
 
+export async function getUpcomingAnime() {
+  const data = await jikanFetch('/top/anime?filter=upcoming&limit=24');
+  return data?.data || [];
+}
+
+export async function getSchedules() {
+  // Returns current day's schedule by default
+  const data = await jikanFetch('/schedules?limit=24');
+  return data?.data || [];
+}
+
 export async function searchAnime(q, { page = 1, genres = '', type = '', status = '', order_by = 'popularity', sort = 'desc' } = {}) {
   const params = new URLSearchParams({ q, page, limit: 24, sfw: true, order_by, sort });
   if (genres) params.set('genres', genres);
