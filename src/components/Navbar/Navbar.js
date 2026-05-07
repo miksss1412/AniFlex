@@ -44,6 +44,20 @@ function NavLinks() {
   );
 }
 
+function SearchSync({ setQuery }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (pathname === '/search') {
+      const q = searchParams.get('q');
+      if (q) setQuery(q);
+    }
+  }, [pathname, searchParams, setQuery]);
+
+  return null;
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled]   = useState(false);
   const [query, setQuery]         = useState('');
@@ -54,7 +68,6 @@ export default function Navbar() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const router   = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -69,13 +82,7 @@ export default function Navbar() {
     setMenuOpen(false); 
     setShowSuggestions(false);
     setActiveIndex(-1);
-    
-    // Sync query with URL if on search page
-    if (pathname === '/search') {
-      const q = searchParams.get('q');
-      if (q) setQuery(q);
-    }
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   // Click outside to close suggestions
   useEffect(() => {
@@ -150,6 +157,9 @@ export default function Navbar() {
 
   return (
     <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
+      <Suspense fallback={null}>
+        <SearchSync setQuery={setQuery} />
+      </Suspense>
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>
