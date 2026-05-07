@@ -75,7 +75,15 @@
 }
 
 /* Search */
-.searchForm { margin-left: auto; }
+.searchForm { 
+  margin-left: auto; 
+}
+
+@media (max-width: 768px) {
+  .searchForm {
+    display: none;
+  }
+}
 
 .searchWrap {
   position: relative;
@@ -123,8 +131,9 @@
 .bar {
   display: block;
   width: 22px;
-  height: 2px;
-  background: var(--text-secondary);
+  height: 2.5px;
+  background: var(--teal-glow);
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.4);
   border-radius: var(--radius-full);
   transition: all var(--transition-base);
   transform-origin: center;
