@@ -185,9 +185,9 @@ export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, titl
   const slug = title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
 
   const fallbacks = [
-    // 1. GoLoad / Vidstreaming (Slug-based, highly reliable for popular shows like One Piece)
-    slug ? `https://goload.pro/streaming.php?id=${slug}-episode-${episode}` : null,
-    slug ? `https://gogohd.net/streaming.php?id=${slug}-episode-${episode}` : null,
+    // 1. Playtaku / Embtaku (Active GoLoad/Vidstreaming mirrors, highly reliable)
+    slug ? `https://playtaku.net/streaming.php?id=${slug}-episode-${episode}` : null,
+    slug ? `https://embtaku.pro/streaming.php?id=${slug}-episode-${episode}` : null,
 
     // 3. VidLink (Very accurate, but One Piece mapping might be broken)
     `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true`,
