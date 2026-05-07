@@ -185,18 +185,18 @@ export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, titl
   const slug = title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
 
   const fallbacks = [
-    // 1. Playtaku / Embtaku (Active GoLoad/Vidstreaming mirrors, highly reliable)
+    // 1. VidSrc.vip (Extremely fast, unrestricted mirror)
+    `https://vidsrc.vip/embed/anime/${malId}/${episode}`,
+
+    // 2. Playtaku / Embtaku (Active GoLoad/Vidstreaming mirrors, highly reliable but strict rate limits)
     slug ? `https://playtaku.net/streaming.php?id=${slug}-episode-${episode}` : null,
     slug ? `https://embtaku.pro/streaming.php?id=${slug}-episode-${episode}` : null,
 
-    // 3. VidLink (Very accurate, but One Piece mapping might be broken)
+    // 4. VidLink (Very accurate, but One Piece mapping might be broken)
     `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true`,
 
-    // 4. VidSrc.cc (Currently having Cloudflare iframe blocks, but good fallback)
+    // 5. VidSrc.cc (Currently having Cloudflare iframe blocks, but good fallback)
     `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
-    
-    // 5. 2Embed (Legacy fallback)
-    `https://www.2embed.cc/embed/anime/${malId}/${episode}`,
   ];
   return fallbacks.filter(Boolean);
 }
