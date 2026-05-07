@@ -182,22 +182,13 @@ export function getStreamUrl(malId, episode = 1) {
 // Fallback embed URLs (try in order if first fails)
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null) {
   const fallbacks = [
-    // 1. VidLink (Correct Syntax)
+    // 1. VidSrc.cc (Verified 200 OK for One Piece MAL ID 21)
+    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
+
+    // 2. VidLink (Very accurate, but One Piece mapping might be broken)
     `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true`,
     
-    // 2. VidSrc.me (Query Parameter Syntax)
-    `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episode}`,
-    
-    // 3. VidSrc.to (Requires AniList usually, but try MAL as fallback)
-    `https://vidsrc.to/embed/anime/${anilistId || malId}/${episode}`,
-
-    // 4. VidSrc.xyz
-    `https://vidsrc.xyz/embed/anime?mal=${malId}&ep=${episode}`,
-
-    // 5. AutoEmbed (Correct Syntax)
-    `https://player.autoembed.cc/embed/anime/${malId}/${episode}`,
-
-    // 6. 2Embed
+    // 3. 2Embed (Legacy fallback)
     `https://www.2embed.cc/embed/anime/${malId}/${episode}`,
   ];
   return fallbacks.filter(Boolean);
