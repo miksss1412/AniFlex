@@ -58,15 +58,17 @@ export default function AnimeCard({ anime, priority = false }) {
         {status && (
           <div className={styles.statusDot} style={{ background: statusColor }} title={status} />
         )}
+
+        {/* Tags inside poster */}
+        <div className={styles.metaOverlay}>
+          {type && <span className={styles.metaTag}>{type}</span>}
+          {eps  && <span className={styles.metaTag}>{eps} EP</span>}
+          {year && <span className={styles.metaTag}>{year}</span>}
+        </div>
       </div>
 
       <div className={styles.info}>
         <h3 className={styles.title} title={title}>{title}</h3>
-        <div className={styles.meta}>
-          {type && <span className={styles.metaTag}>{type}</span>}
-          {eps  && <span className={styles.metaTag}>{eps} eps</span>}
-          {year && <span className={styles.metaTag}>{year}</span>}
-        </div>
       </div>
     </Link>
   );
