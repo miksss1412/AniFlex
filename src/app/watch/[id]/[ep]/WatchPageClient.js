@@ -48,29 +48,6 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                 title={`${title} - Episode ${epNum}`}
                 id="anime-player"
               />
-              <div className={styles.playerActions}>
-                <p className={styles.adblockWarning}>
-                  ⚠️ <strong>Black Screen?</strong> Please disable your Adblocker or Browser Shields. Streaming servers often refuse to play if popups are blocked.
-                </p>
-                <div style={{display:'flex', gap:'10px'}}>
-                  <button 
-                    className={styles.refreshBtn} 
-                    onClick={() => { const s = streams[streamIdx]; setStreamIdx(-1); setTimeout(()=>setStreamIdx(streams.indexOf(s)), 50); }}
-                    title="Refresh Player"
-                  >
-                    🔄
-                  </button>
-                  <a 
-                    href={streams[streamIdx]} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className={styles.externalLink}
-                    title="Open in New Tab"
-                  >
-                    ↗ Open in New Tab
-                  </a>
-                </div>
-              </div>
             </div>
 
             {/* Server switcher */}
