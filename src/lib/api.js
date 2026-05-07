@@ -167,7 +167,7 @@ export async function getSchedules() {
   return data?.Page?.airingSchedules?.map(item => item.media) || [];
 }
 
-export async function searchAnime(q, { page = 1, genres = [], type = '', status = '', sort = 'SEARCH_MATCH' } = {}) {
+export async function searchAnime(q, { page = 1, genres = [], type = '', status = '', sort = 'POPULARITY_DESC' } = {}) {
   const QUERY = `
     query ($page: Int, $q: String, $genres: [String], $format: [MediaFormat], $status: MediaStatus, $sort: [MediaSort]) {
       Page(page: $page, perPage: 24) {
@@ -180,12 +180,14 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
   `;
   
   // Clean up variables
+  // Note: AniList errors if sort is SEARCH_MATCH but search is null/undefined
+  const actualSort = q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort === 'SEARCH_MATCH' ? 'POPULARITY_DESC' : sort];
+
   const variables = { 
     page, 
     q: q ? q.trim() : undefined, 
     genres: (genres && genres.length) ? genres : undefined,
-    // If there's a search query and no explicit sort, use SEARCH_MATCH
-    sort: q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort]
+    sort: actualSort
   };
   
   if (type) variables.format = [type];
