@@ -106,6 +106,17 @@
   z-index: 2;
 }
 
+.adblockWarning {
+  font-size: 0.85rem;
+  color: #ffb74d;
+  background-color: rgba(255, 183, 77, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 0;
+  max-width: 70%;
+  line-height: 1.4;
+}
+
 .externalLink {
   padding: 6px 12px;
   background: rgba(0,0,0,0.6);
