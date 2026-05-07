@@ -62,6 +62,12 @@
   opacity: 1;
 }
 
+@media (max-width: 768px) {
+  .scrollBtn {
+    display: none;
+  }
+}
+
 .scrollBtn:hover {
   background: var(--teal-mid);
   border-color: var(--teal-glow);
@@ -112,8 +118,8 @@
   .slide { flex: 0 0 calc(33.333% - 14px); } /* 3 items */
 }
 @media (max-width: 600px) {
-  .slide { flex: 0 0 calc(50% - 10px); } /* 2 items */
+  .slide { flex: 0 0 calc(45% - 10px); } /* ~2.2 items */
 }
-@media (max-width: 400px) {
-  .slide { flex: 0 0 80%; } /* 1.2 items */
+@media (max-width: 450px) {
+  .slide { flex: 0 0 calc(42% - 8px); } /* ~2.4 items */
 }
