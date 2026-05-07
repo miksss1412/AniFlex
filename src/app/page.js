@@ -6,6 +6,7 @@ import {
   getSeasonalAnime, 
   getUpcomingAnime,
   getSchedules,
+  getRecentAnime,
   getAnilistTrending 
 } from '@/lib/api';
 import HeroSection from '@/components/HeroSection/HeroSection';
@@ -29,6 +30,8 @@ export default async function HomePage() {
   await delay(400);
   const trendingList = await getTrendingAnime();
   await delay(400);
+  const recentList = await getRecentAnime();
+  await delay(400);
   const seasonalList = await getSeasonalAnime();
   await delay(400);
   const popularList = await getPopularAnime();
@@ -47,6 +50,11 @@ export default async function HomePage() {
             title="Trending Now"
             anime={trendingList}
             viewMoreHref="/search?filter=trending"
+          />
+          <AnimeSection
+            title="Recently Updated"
+            anime={recentList}
+            viewMoreHref="/search"
           />
           <AnimeSection
             title="Seasonal Anime"

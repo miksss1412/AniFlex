@@ -90,6 +90,12 @@ export async function getSchedules() {
   return data?.data || [];
 }
 
+export async function getRecentAnime() {
+  const data = await jikanFetch('/watch/episodes?limit=24');
+  // Return the anime entry from each episode update
+  return data?.data?.map(item => item.entry) || [];
+}
+
 export async function searchAnime(q, { page = 1, genres = '', type = '', status = '', order_by = 'popularity', sort = 'desc' } = {}) {
   const params = new URLSearchParams({ q, page, limit: 24, sfw: true, order_by, sort });
   if (genres) params.set('genres', genres);
