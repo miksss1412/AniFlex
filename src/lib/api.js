@@ -169,7 +169,7 @@ export async function getSchedules() {
 
 export async function searchAnime(q, { page = 1, genres = [], type = '', status = '', sort = 'POPULARITY_DESC' } = {}) {
   const QUERY = `
-    query ($page: Int, $q: String, $genres: [String], $format: [MediaFormat], $status: MediaStatus, $sort: [MediaSort]) {
+    query ($page: Int, $q: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort]) {
       Page(page: $page, perPage: 24) {
         pageInfo { total currentPage lastPage hasNextPage }
         media(search: $q, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME, isAdult: false) {
@@ -180,17 +180,15 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
   `;
   
   // Clean up variables
-  // Note: AniList errors if sort is SEARCH_MATCH but search is null/undefined
-  const actualSort = q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort === 'SEARCH_MATCH' ? 'POPULARITY_DESC' : sort];
-
   const variables = { 
     page, 
     q: q ? q.trim() : undefined, 
-    genres: (genres && genres.length) ? genres : undefined,
-    sort: actualSort
+    genres: (genres && genres.length > 0) ? genres : undefined,
+    // Note: AniList errors if sort is SEARCH_MATCH but search is null/undefined
+    sort: q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort === 'SEARCH_MATCH' ? 'POPULARITY_DESC' : sort]
   };
   
-  if (type) variables.format = [type];
+  if (type) variables.format = type;
   if (status) variables.status = status;
 
   const data = await anilistFetch(QUERY, variables);
