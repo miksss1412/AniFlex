@@ -76,23 +76,24 @@ export default function SearchClient({ genres = [] }) {
     const g  = searchParams.get('genre')  || '';
     const t  = searchParams.get('type')   || '';
     const s  = searchParams.get('status') || '';
+    const srt = searchParams.get('sort')  || 'POPULARITY_DESC';
     
-    // If we have a filter shortcut, reset other filters
-    if (f) {
-      setType(''); setStatus(''); setGenre('');
-    } else {
-      if (t) setType(t);
-      if (s) setStatus(s);
-      if (g) setGenre(g);
-    }
-
-    setQuery(q); 
-    setInputVal(q); 
-    setFilter(f); 
+    // Sync state with URL
+    setQuery(q);
+    setInputVal(q);
+    setFilter(f);
+    setGenre(g);
+    setType(t);
+    setStatus(s);
+    setSort(srt);
     setPage(1);
     
-    // Call search with the values from params to avoid stale state issues
-    doSearch(q, f ? '' : (t || type), f ? '' : (s || status), g || genre, sort, 1);
+    // If we have a filter shortcut (trending, etc), it overrides everything else
+    const searchType = f ? '' : t;
+    const searchStatus = f ? '' : s;
+    const searchGenre = f ? '' : g;
+
+    doSearch(q, searchType, searchStatus, searchGenre, srt, 1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 

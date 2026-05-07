@@ -180,7 +180,14 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
   `;
   
   // Clean up variables
-  const variables = { page, q: q || undefined, genres: genres.length ? genres : undefined, sort: [sort] };
+  const variables = { 
+    page, 
+    q: q ? q.trim() : undefined, 
+    genres: (genres && genres.length) ? genres : undefined,
+    // If there's a search query and no explicit sort, use SEARCH_MATCH
+    sort: q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort]
+  };
+  
   if (type) variables.format = [type];
   if (status) variables.status = status;
 
