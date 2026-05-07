@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
+import AnimeSection from '@/components/AnimeSection/AnimeSection';
 import styles from './AnimeDetail.module.css';
 
 export default function AnimeDetailClient({
@@ -208,12 +209,10 @@ export default function AnimeDetailClient({
           {/* Recommendations */}
           {recommendations.length > 0 && (
             <div className={styles.recsSection}>
-              <h2 className="section-title">You Might Also Like</h2>
-              <div className="anime-grid">
-                {recommendations.slice(0, 12).map((r, i) => (
-                  <AnimeCard key={r.mal_id || i} anime={r} />
-                ))}
-              </div>
+              <AnimeSection 
+                title="You Might Also Like" 
+                anime={recommendations} 
+              />
             </div>
           )}
         </main>
