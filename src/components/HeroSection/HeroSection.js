@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './HeroSection.module.css';
 
-export default function HeroSection({ anime = [] }) {
+export default function HeroSection({ anime = [], isManga = false }) {
   const [current, setCurrent] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
 
@@ -34,6 +34,11 @@ export default function HeroSection({ anime = [] }) {
   const malId  = item.idMal;
   const score  = item.averageScore ? (item.averageScore / 10).toFixed(1) : null;
   const genres = item.genres?.slice(0, 3) || [];
+  const typeLabel = isManga ? (
+    item.countryOfOrigin === 'KR' ? 'Manhwa' :
+    item.countryOfOrigin === 'CN' ? 'Manhua' :
+    'Manga'
+  ) : (item.format || 'Anime');
 
   return (
     <section className={styles.hero}>
@@ -56,8 +61,11 @@ export default function HeroSection({ anime = [] }) {
       {/* Content */}
       <div className={`container ${styles.content}`}>
         <div className={`${styles.textBlock} ${transitioning ? styles.textFade : ''}`}>
-          {/* Genres */}
+          {/* Genres & Type */}
           <div className={styles.genreRow}>
+            <span className="badge badge-teal" style={{ background: 'var(--grad-hero)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+              {typeLabel}
+            </span>
             {genres.map(g => (
               <span key={g} className="badge badge-teal">{g}</span>
             ))}
@@ -76,15 +84,31 @@ export default function HeroSection({ anime = [] }) {
           <p className={styles.desc}>{desc}</p>
 
           <div className={styles.actions}>
-            {malId && (
-              <Link href={`/anime/${malId}`} className="btn btn-primary" id={`hero-watch-${malId}`}>
-                <span>▶</span> Watch Now
-              </Link>
-            )}
-            {malId && (
-              <Link href={`/anime/${malId}`} className="btn btn-secondary" id={`hero-details-${malId}`}>
-                ℹ Details
-              </Link>
+            {isManga ? (
+              <>
+                <Link href={`/manga/${item.id}`} className="btn btn-primary" id={`hero-read-${item.id}`}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style={{ marginRight: '4px' }}>
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                  </svg>
+                  Read Now
+                </Link>
+                <Link href={`/manga/${item.id}`} className="btn btn-secondary" id={`hero-details-${item.id}`}>
+                  ℹ Details
+                </Link>
+              </>
+            ) : (
+              <>
+                {malId && (
+                  <Link href={`/anime/${malId}`} className="btn btn-primary" id={`hero-watch-${malId}`}>
+                    <span>▶</span> Watch Now
+                  </Link>
+                )}
+                {malId && (
+                  <Link href={`/anime/${malId}`} className="btn btn-secondary" id={`hero-details-${malId}`}>
+                    ℹ Details
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>

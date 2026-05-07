@@ -11,10 +11,8 @@ function NavLinks() {
   const currentFilter = searchParams.get('filter');
 
   const navLinks = [
-    { href: '/',         label: 'Home'     },
-    { href: '/search',   label: 'Browse'   },
-    { href: '/search?filter=trending',  label: 'Trending' },
-    { href: '/search?filter=seasonal',  label: 'Seasonal' },
+    { href: '/',      label: 'Anime' },
+    { href: '/manga',  label: 'Manga' },
   ];
 
   const isActive = (href) => {
@@ -53,10 +51,13 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const router   = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -67,7 +68,14 @@ export default function Navbar() {
   useEffect(() => { 
     setMenuOpen(false); 
     setShowSuggestions(false);
-  }, [pathname]);
+    setActiveIndex(-1);
+    
+    // Sync query with URL if on search page
+    if (pathname === '/search') {
+      const q = searchParams.get('q');
+      if (q) setQuery(q);
+    }
+  }, [pathname, searchParams]);
 
   // Click outside to close suggestions
   useEffect(() => {
@@ -91,6 +99,7 @@ export default function Navbar() {
   const handleInputChange = (e) => {
     const val = e.target.value;
     setQuery(val);
+    setActiveIndex(-1);
     
     if (val.trim().length === 0) {
       setSuggestions([]);
@@ -103,21 +112,40 @@ export default function Navbar() {
       setIsSearching(true);
       try {
         const res = await searchAnime(val, { page: 1, sort: 'SEARCH_MATCH' });
-        setSuggestions(res.results.slice(0, 5));
+        setSuggestions(res.results.slice(0, 6));
         setShowSuggestions(true);
       } catch (err) {
         console.error("Suggestion fetch error:", err);
       } finally {
         setIsSearching(false);
       }
-    }, 400);
+    }, 300);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev > -1 ? prev - 1 : -1));
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0) {
+        e.preventDefault();
+        const anime = suggestions[activeIndex];
+        setShowSuggestions(false);
+        router.push(`/anime/${anime.idMal || anime.id}`);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
   };
 
   const mobileLinks = [
-    { href: '/',         label: 'Home'     },
-    { href: '/search',   label: 'Browse'   },
-    { href: '/search?filter=trending',  label: 'Trending' },
-    { href: '/search?filter=seasonal',  label: 'Seasonal' },
+    { href: '/',      label: 'Anime' },
+    { href: '/manga',  label: 'Manga' },
   ];
 
   return (
@@ -145,6 +173,7 @@ export default function Navbar() {
               placeholder="Search anime..."
               value={query}
               onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
               onFocus={() => { if (query.trim()) setShowSuggestions(true); }}
               className={styles.searchInput}
               autoComplete="off"
@@ -155,12 +184,13 @@ export default function Navbar() {
                 {isSearching ? (
                   <div className={styles.suggestionItem}>Searching...</div>
                 ) : suggestions.length > 0 ? (
-                  suggestions.map((anime) => (
+                  suggestions.map((anime, index) => (
                     <Link 
                       key={anime.id} 
-                      href={`/watch/${anime.idMal || anime.id}`}
-                      className={styles.suggestionItem}
+                      href={`/anime/${anime.idMal || anime.id}`}
+                      className={`${styles.suggestionItem} ${activeIndex === index ? styles.activeSuggestion : ''}`}
                       onClick={() => setShowSuggestions(false)}
+                      onMouseEnter={() => setActiveIndex(index)}
                     >
                       <img src={anime.coverImage?.extraLarge || anime.coverImage?.large} alt="" className={styles.suggestionImg} />
                       <div className={styles.suggestionInfo}>
@@ -168,14 +198,26 @@ export default function Navbar() {
                           {anime.title.english || anime.title.romaji}
                         </div>
                         <div className={styles.suggestionMeta}>
+                          {anime.status && <span className={styles.status}>{anime.status.replace(/_/g, ' ')}</span>}
                           {anime.format && <span>{anime.format}</span>}
                           {anime.seasonYear && <span>• {anime.seasonYear}</span>}
+                          {anime.averageScore && <span className={styles.score}>★ {anime.averageScore / 10}</span>}
                         </div>
                       </div>
                     </Link>
                   ))
                 ) : (
                   <div className={styles.suggestionItem}>No results found</div>
+                )}
+                
+                {suggestions.length > 0 && !isSearching && (
+                  <Link 
+                    href={`/search?q=${encodeURIComponent(query.trim())}`}
+                    className={styles.viewAllResults}
+                    onClick={() => setShowSuggestions(false)}
+                  >
+                    View all results for "{query}"
+                  </Link>
                 )}
               </div>
             )}

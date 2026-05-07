@@ -30,7 +30,7 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
           <div className={styles.playerColumn}>
             {/* Breadcrumb */}
             <nav className={styles.breadcrumb}>
-              <Link href="/" className={styles.crumb}>Home</Link>
+              <Link href="/" className={styles.crumb}>Anime</Link>
               <span className={styles.sep}>›</span>
               <Link href={`/anime/${animeId}`} className={styles.crumb}>{title}</Link>
               <span className={styles.sep}>›</span>

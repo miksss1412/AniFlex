@@ -1,1 +1,0 @@
-self.__SSG_MANIFEST=new Set(["\u002Fanime\u002F[id]","\u002Fwatch\u002F[id]\u002F[ep]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
@@ -9,8 +9,47 @@ import styles from './AnimeDetail.module.css';
 export default function AnimeDetailClient({
   anime, episodes, pagination, characters, streaming, extra, recommendations,
 }) {
-  const [tab, setTab]         = useState('episodes');
+  const [tab, setTab]           = useState('episodes');
   const [imgError, setImgError] = useState(false);
+  const [allEpisodes, setAllEpisodes] = useState(episodes);
+  const [loadingEps, setLoadingEps]   = useState(false);
+
+  // Re-sync episodes if props change (e.g. navigation)
+  useEffect(() => {
+    setAllEpisodes(episodes);
+  }, [episodes]);
+
+  // Fetch additional episodes if paginated
+  useEffect(() => {
+    async function fetchMore() {
+      if (!pagination?.has_next_page) return;
+      
+      setLoadingEps(true);
+      let currentEpisodes = [...episodes];
+      const totalPages = pagination.last_visible_page;
+      const malId = anime.mal_id;
+      
+      for (let p = 2; p <= Math.min(totalPages, 15); p++) { // Cap at 1500 episodes for safety
+        try {
+          const res = await fetch(`/api/proxy?path=/anime/${malId}/episodes?page=${p}`);
+          const data = await res.json();
+          if (data?.data) {
+            currentEpisodes = [...currentEpisodes, ...data.data];
+            setAllEpisodes([...currentEpisodes]); // Update UI incrementally
+          }
+          if (!data?.pagination?.has_next_page) break;
+          // Respect Jikan rate limits
+          await new Promise(r => setTimeout(r, 450));
+        } catch (e) {
+          console.error('Failed to fetch more episodes:', e);
+          break; 
+        }
+      }
+      setLoadingEps(false);
+    }
+    
+    fetchMore();
+  }, [anime.mal_id, pagination, episodes]);
 
   const banner     = extra?.bannerImage || null;
   const cover      = anime.images?.jpg?.large_image_url || extra?.coverImage?.large || '';
@@ -37,8 +76,11 @@ export default function AnimeDetailClient({
       <div className={styles.bannerWrap}>
         {banner ? (
           <Image src={banner} alt={title} fill className={styles.bannerImg} priority sizes="100vw" />
+        ) : cover ? (
+          /* Fallback: use cover art as a blurred banner */
+          <Image src={cover} alt={title} fill className={styles.bannerFallback} priority sizes="100vw" />
         ) : (
-          <div className={styles.bannerFallback} />
+          <div className={styles.bannerGradient} />
         )}
         <div className={styles.bannerOverlay} />
       </div>
@@ -63,63 +105,66 @@ export default function AnimeDetailClient({
             )}
           </div>
 
-          {/* Quick watch */}
-          {episodes.length > 0 && (
-            <Link
-              href={`/watch/${malId}/1`}
-              className={`btn btn-primary ${styles.watchBtn}`}
-              id="detail-watch-ep1"
-            >
-              <span>▶</span> Watch Ep 1
-            </Link>
-          )}
+          {/* Info group — on mobile this sits beside the cover in a flex row */}
+          <div className={styles.sidebarInfo}>
+            {/* Quick watch */}
+            {episodes.length > 0 && (
+              <Link
+                href={`/watch/${malId}/1`}
+                className={`btn btn-primary ${styles.watchBtn}`}
+                id="detail-watch-ep1"
+              >
+                <span>▶</span> Watch Ep 1
+              </Link>
+            )}
 
-          {/* Stats */}
-          <div className={styles.stats}>
-            {score && (
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Score</span>
-                <span className={styles.statValue} style={{color:'#f5a623'}}>⭐ {score}</span>
-              </div>
-            )}
-            {rank && (
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Rank</span>
-                <span className={styles.statValue}>#{rank}</span>
-              </div>
-            )}
-            {popularity && (
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Popularity</span>
-                <span className={styles.statValue}>#{popularity}</span>
+            {/* Stats */}
+            <div className={styles.stats}>
+              {score && (
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Score</span>
+                  <span className={styles.statValue} style={{color:'#f5a623'}}>⭐ {score}</span>
+                </div>
+              )}
+              {rank && (
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Rank</span>
+                  <span className={styles.statValue}>#{rank}</span>
+                </div>
+              )}
+              {popularity && (
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Popularity</span>
+                  <span className={styles.statValue}>#{popularity}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Info list */}
+            <ul className={styles.infoList}>
+              {type     && <InfoRow label="Type"     value={type} />}
+              {episodes_n && <InfoRow label="Episodes" value={episodes_n} />}
+              {status   && <InfoRow label="Status"   value={status} color={
+                status.includes('Airing') ? 'var(--teal-glow)' : undefined
+              } />}
+              {aired    && <InfoRow label="Aired"    value={aired} />}
+              {duration && <InfoRow label="Duration" value={duration} />}
+              {rating   && <InfoRow label="Rating"   value={rating} />}
+              {studios.length > 0 && <InfoRow label="Studios" value={studios.join(', ')} />}
+            </ul>
+
+            {/* Official streaming links */}
+            {streaming.length > 0 && (
+              <div className={styles.officialStream}>
+                <p className={styles.officialLabel}>Official Streaming</p>
+                {streaming.map(s => (
+                  <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className={styles.officialLink}>
+                    {s.name} ↗
+                  </a>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Info list */}
-          <ul className={styles.infoList}>
-            {type     && <InfoRow label="Type"     value={type} />}
-            {episodes_n && <InfoRow label="Episodes" value={episodes_n} />}
-            {status   && <InfoRow label="Status"   value={status} color={
-              status.includes('Airing') ? 'var(--teal-glow)' : undefined
-            } />}
-            {aired    && <InfoRow label="Aired"    value={aired} />}
-            {duration && <InfoRow label="Duration" value={duration} />}
-            {rating   && <InfoRow label="Rating"   value={rating} />}
-            {studios.length > 0 && <InfoRow label="Studios" value={studios.join(', ')} />}
-          </ul>
-
-          {/* Official streaming links */}
-          {streaming.length > 0 && (
-            <div className={styles.officialStream}>
-              <p className={styles.officialLabel}>Official Streaming</p>
-              {streaming.map(s => (
-                <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className={styles.officialLink}>
-                  {s.name} ↗
-                </a>
-              ))}
-            </div>
-          )}
         </aside>
 
         {/* Main content */}
@@ -160,21 +205,29 @@ export default function AnimeDetailClient({
           {/* Tab: Episodes */}
           {tab === 'episodes' && (
             <div className={styles.episodeGrid}>
-              {episodes.length === 0 ? (
+              {allEpisodes.length === 0 ? (
                 <p className={styles.empty}>No episode data available.</p>
               ) : (
-                episodes.map(ep => (
-                  <Link
-                    key={ep.mal_id}
-                    href={`/watch/${malId}/${ep.mal_id}`}
-                    className={styles.epCard}
-                    id={`ep-card-${ep.mal_id}`}
-                  >
-                    <span className={styles.epNum}>EP {ep.mal_id}</span>
-                    <span className={styles.epTitle}>{ep.title || `Episode ${ep.mal_id}`}</span>
-                    {ep.score && <span className={styles.epScore}>⭐ {ep.score}</span>}
-                  </Link>
-                ))
+                <>
+                  {allEpisodes.map(ep => (
+                    <Link
+                      key={ep.mal_id}
+                      href={`/watch/${malId}/${ep.mal_id}`}
+                      className={styles.epCard}
+                      id={`ep-card-${ep.mal_id}`}
+                    >
+                      <span className={styles.epNum}>EP {ep.mal_id}</span>
+                      <span className={styles.epTitle}>{ep.title || `Episode ${ep.mal_id}`}</span>
+                      {ep.score && <span className={styles.epScore}>⭐ {ep.score}</span>}
+                    </Link>
+                  ))}
+                  {loadingEps && (
+                    <div className={styles.loadingInfo}>
+                      <span className={styles.loaderSmall}></span>
+                      Loading more episodes...
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

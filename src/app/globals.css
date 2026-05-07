@@ -93,9 +93,17 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip avoids creating a scroll container unlike hidden */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reserve scrollbar gutter on desktop (classic scrollbars) only.
+   Mobile uses overlay scrollbars so this would wrongly reserve space there. */
+@media (hover: hover) and (pointer: fine) {
+  html, body {
+    scrollbar-gutter: stable;
+  }
 }
 
 img {

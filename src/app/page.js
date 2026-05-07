@@ -80,17 +80,6 @@ export default async function HomePage() {
           />
         </div>
       </main>
-      <footer className={styles.footer}>
-        <div className="container">
-          <div className={styles.footerInner}>
-            <span className={styles.footerLogo}>▶ Ani<span className={styles.footerAccent}>Flex</span></span>
-            <p className={styles.footerNote}>
-              AniFlex uses the free <a href="https://jikan.moe" target="_blank" rel="noopener noreferrer">Jikan API</a> & <a href="https://anilist.co" target="_blank" rel="noopener noreferrer">AniList</a>.
-              Streaming content is provided by third-party embed services.
-            </p>
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

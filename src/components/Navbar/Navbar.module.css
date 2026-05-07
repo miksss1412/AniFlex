@@ -3,7 +3,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
+  width: 100%;
   z-index: var(--z-nav);
   transition: background var(--transition-slow), box-shadow var(--transition-slow), backdrop-filter var(--transition-slow);
   background: transparent;
@@ -76,7 +76,7 @@
 
 /* Search */
 .searchForm { 
-  margin-left: auto;
+  flex-shrink: 0;
   transition: all 0.3s ease;
 }
 
@@ -204,6 +204,7 @@
 /* Suggestions dropdown */
 .linksPlaceholder {
   flex: 1;
+  min-width: 0;
 }
 
 .suggestionsDropdown {
@@ -233,16 +234,14 @@
   cursor: pointer;
 }
 
-.suggestionItem:hover {
-  background: rgba(255,255,255,0.06);
-}
-
-.suggestionItem:first-child {
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-
 .suggestionItem:last-child {
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-bottom: none;
+}
+
+.suggestionItem.activeSuggestion {
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--teal-glow);
+  padding-left: 11px; /* Compensate for border */
 }
 
 .suggestionImg {
@@ -251,12 +250,13 @@
   object-fit: cover;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .suggestionInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -265,13 +265,47 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-primary);
+  font-size: 0.9rem;
 }
 
 .suggestionMeta {
   font-size: 0.75rem;
   color: var(--text-muted);
   display: flex;
+  align-items: center;
   gap: 6px;
+}
+
+.score {
+  color: #ffb400;
+  font-weight: 700;
+}
+
+.status {
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  background: rgba(255,255,255,0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.viewAllResults {
+  display: block;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--teal-glow);
+  background: rgba(0, 245, 212, 0.05);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  transition: all var(--transition-fast);
+}
+
+.viewAllResults:hover {
+  background: rgba(0, 245, 212, 0.1);
+  color: #fff;
 }
 
 @media (max-width: 768px) {

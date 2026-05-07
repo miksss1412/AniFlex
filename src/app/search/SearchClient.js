@@ -7,7 +7,10 @@ import {
   getPopularAnime, 
   getSeasonalAnime,
   getUpcomingAnime,
-  getRecentAnime
+  getRecentAnime,
+  getTrendingManga,
+  getPopularManga,
+  searchManga
 } from '@/lib/api';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
 import styles from './Search.module.css';
@@ -41,25 +44,60 @@ export default function SearchClient({ genres = [] }) {
 
   const doSearch = useCallback(async (q, tp, st, gn, srt, pg, append = false) => {
     setLoading(true);
+    const isMangaSearch = tp?.toLowerCase() === 'manga' || searchParams.get('type') === 'manga';
     try {
       let data;
       
-      if (!q && !tp && !st && !gn) {
+      if (!q && !st && !gn) {
         // Use filter shortcuts
-        if (filter === 'trending')       data = await getTrendingAnime(pg, 24);
-        else if (filter === 'popular')   data = await getPopularAnime(pg, 24);
-        else if (filter === 'seasonal')  data = await getSeasonalAnime(pg, 24);
-        else if (filter === 'upcoming')  data = await getUpcomingAnime(pg, 24);
-        else if (filter === 'recent')    data = await getRecentAnime(pg, 24);
-        else                             data = await getPopularAnime(pg, 24);
+        if (filter === 'trending') {
+          data = isMangaSearch ? await getTrendingManga(pg, 24) : await getTrendingAnime(pg, 24);
+        } else if (filter === 'popular') {
+          data = isMangaSearch ? await getPopularManga(pg, 24) : await getPopularAnime(pg, 24);
+        } else if (filter === 'seasonal' && !isMangaSearch) {
+          data = await getSeasonalAnime(pg, 24);
+        } else if (filter === 'upcoming' && !isMangaSearch) {
+          data = await getUpcomingAnime(pg, 24);
+        } else if (filter === 'recent' && !isMangaSearch) {
+          data = await getRecentAnime(pg, 24);
+        } else {
+          data = isMangaSearch ? await getPopularManga(pg, 24) : await getPopularAnime(pg, 24);
+        }
 
-        setResults(prev => append ? [...prev, ...data] : data);
+        if (!data) data = [];
+
+        setResults(prev => {
+          const combined = append ? [...prev, ...data] : data;
+          const seen = new Set();
+          return combined.filter(a => {
+            const id = a.mal_id || a.id;
+            if (!id) return true;
+            if (seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          });
+        });
         setHasMore(data.length === 24);
       } else {
         const genreList = gn ? [gn] : [];
-        const result = await searchAnime(q, { page: pg, genres: genreList, type: tp, status: st, sort: srt });
+        let result;
+        if (isMangaSearch) {
+           result = await searchManga(q, { page: pg, genres: genreList, sort: srt });
+        } else {
+           result = await searchAnime(q, { page: pg, genres: genreList, type: tp, status: st, sort: srt });
+        }
         
-        setResults(prev => append ? [...prev, ...result.results] : result.results);
+        setResults(prev => {
+          const combined = append ? [...prev, ...result.results] : result.results;
+          const seen = new Set();
+          return combined.filter(a => {
+            const id = a.mal_id || a.id;
+            if (!id) return true;
+            if (seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          });
+        });
         setHasMore(result.pagination?.has_next_page || false);
       }
     } catch (e) {
@@ -67,7 +105,7 @@ export default function SearchClient({ genres = [] }) {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, searchParams]);
 
   // Initial search on mount & param change
   useEffect(() => {
@@ -125,12 +163,14 @@ export default function SearchClient({ genres = [] }) {
     filter === 'upcoming' ? 'Upcoming' : 
     filter === 'recent'   ? 'Recently Updated' : 'Browse';
 
+  const isManga = type === 'manga' || searchParams.get('type') === 'manga';
+
   return (
     <div className={styles.page}>
       <div className={`container ${styles.inner}`}>
         {/* Header */}
         <div className={styles.header}>
-          <h1 className={styles.heading}>{filterLabel} <span className={styles.accent}>Anime</span></h1>
+          <h1 className={styles.heading}>{filterLabel} <span className={styles.accent}>{isManga ? 'Manga' : 'Anime'}</span></h1>
         </div>
 
         {/* Filters row */}
@@ -221,7 +261,7 @@ export default function SearchClient({ genres = [] }) {
         ) : (
           <div className="anime-grid">
             {results.map((a, i) => (
-              <AnimeCard key={a.mal_id || a.id || i} anime={a} priority={i < 4} />
+              <AnimeCard key={`${a.mal_id || a.id || 'idx'}-${i}`} anime={a} priority={i < 4} isManga={isManga} />
             ))}
           </div>
         )}

@@ -11,28 +11,32 @@ async function jikanFetch(path, retries = 3, options = {}) {
       ...options
     };
     
-    // Conflict: revalidate and cache: no-store cannot both be present
     if (options.cache === 'no-store') {
       delete fetchOptions.next;
     }
 
     const res = await fetch(`${JIKAN_BASE}${path}`, fetchOptions);
     
-    if (res.status === 429) {
+    // Handle rate limits (429) and transient server errors (500+)
+    if (res.status === 429 || (res.status >= 500 && res.status <= 504)) {
       if (retries > 0) {
-        const waitTime = (Math.pow(2, 3 - retries) * 1000) + (Math.random() * 500);
-        console.warn(`Rate limited on ${path}. Retrying in ${Math.round(waitTime)}ms...`);
+        // Exponential backoff
+        const waitTime = (Math.pow(2, 5 - retries) * 1000) + (Math.random() * 500);
+        console.warn(`Jikan error ${res.status} on ${path}. Retrying (${retries} left) in ${Math.round(waitTime)}ms...`);
         await delay(waitTime);
         return jikanFetch(path, retries - 1, options);
       }
-      throw new Error('Rate limited');
+      return null;
     }
     
-    if (!res.ok) throw new Error(`Jikan ${res.status}`);
+    if (!res.ok) {
+      console.error(`Jikan fetch failed: ${res.status} ${res.statusText} for ${path}`);
+      return null;
+    }
+
     return res.json();
   } catch (e) {
-    if (e.message === 'Rate limited') throw e;
-    console.error('Jikan fetch error:', e);
+    console.error('Jikan fetch exception:', e);
     return null;
   }
 }
@@ -201,17 +205,31 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
   };
 }
 
+// Simple in‑memory cache for streaming data (TTL 5 min)
+const streamingCache = new Map();
+function getStreamingData(malId) {
+  const cacheKey = `streaming-${malId}`;
+  const now = Date.now();
+  const entry = streamingCache.get(cacheKey);
+  if (entry && now - entry.timestamp < 5 * 60 * 1000) {
+    return Promise.resolve(entry.data);
+  }
+  // Use jikanFetch with its own retry/backoff logic
+  return jikanFetch(`/anime/${malId}/streaming`).then(data => {
+    streamingCache.set(cacheKey, { data, timestamp: Date.now() });
+    return data;
+  });
+}
+
 export async function getAnimeById(id) {
-  // Burst is 3 req/sec. Sequence them with small delays to be safe.
-  const anime      = await jikanFetch(`/anime/${id}/full`);
+  // Give the critical anime lookup more retries (5) to survive rate limits
+  const anime      = await jikanFetch(`/anime/${id}/full`, 5);
   await delay(350); 
   const episodes   = await jikanFetch(`/anime/${id}/episodes?page=1`);
   await delay(350);
-  // Characters for long series (One Piece, etc) can exceed 2MB cache limit.
-  // We opt out of Next.js caching for this specific request.
   const characters = await jikanFetch(`/anime/${id}/characters`, 3, { cache: 'no-store' });
   await delay(350);
-  const streaming  = await jikanFetch(`/anime/${id}/streaming`);
+  const streaming  = await getStreamingData(id);
 
   return {
     anime:      anime?.data || null,
@@ -230,6 +248,263 @@ export async function getAnimeEpisodes(id, page = 1) {
 export async function getAnimeRecommendations(id) {
   const data = await jikanFetch(`/anime/${id}/recommendations`);
   return data?.data?.slice(0, 12).map(r => r.entry) || [];
+}
+
+// ─── Manga API (AniList + MangaDex) ──────────────────────────
+
+const MANGA_QUERY_FIELDS = `
+  id
+  idMal
+  title { romaji english native }
+  coverImage { extraLarge large color }
+  bannerImage
+  averageScore
+  chapters
+  volumes
+  status
+  format
+  countryOfOrigin
+  genres
+`;
+
+export async function getTrendingManga(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(sort: TRENDING_DESC, type: MANGA, isAdult: false) {
+          ${MANGA_QUERY_FIELDS}
+          description(asHtml: false)
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
+}
+
+export async function getPopularManga(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(sort: POPULARITY_DESC, type: MANGA, isAdult: false) {
+          ${MANGA_QUERY_FIELDS}
+          description(asHtml: false)
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
+}
+
+export async function getRecentManga(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(sort: UPDATED_AT_DESC, type: MANGA, isAdult: false) {
+          ${MANGA_QUERY_FIELDS}
+          description(asHtml: false)
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
+}
+
+export async function getTopManga(page = 1, perPage = 20) {
+  const QUERY = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(sort: SCORE_DESC, type: MANGA, isAdult: false) {
+          ${MANGA_QUERY_FIELDS}
+          description(asHtml: false)
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { page, perPage });
+  return data?.Page?.media || [];
+}
+
+export async function searchManga(q, { page = 1, genres = [], sort = 'POPULARITY_DESC' } = {}) {
+  const QUERY = `
+    query ($page: Int, $q: String, $genres: [String], $sort: [MediaSort]) {
+      Page(page: $page, perPage: 24) {
+        pageInfo { total currentPage lastPage hasNextPage }
+        media(search: $q, genre_in: $genres, sort: $sort, type: MANGA, isAdult: false) {
+          ${MANGA_QUERY_FIELDS}
+          description(asHtml: false)
+        }
+      }
+    }
+  `;
+  const variables = { 
+    page, 
+    q: q ? q.trim() : undefined, 
+    genres: (genres && genres.length > 0) ? genres : undefined,
+    sort: q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort]
+  };
+  const data = await anilistFetch(QUERY, variables);
+  return { 
+    results: data?.Page?.media || [], 
+    pagination: {
+      last_visible_page: data?.Page?.pageInfo?.lastPage,
+      has_next_page: data?.Page?.pageInfo?.hasNextPage
+    }
+  };
+}
+
+export async function getMangaById(id) {
+  const QUERY = `
+    query ($id: Int) {
+      Media(id: $id, type: MANGA) {
+        ${MANGA_QUERY_FIELDS}
+        description(asHtml: true)
+        tags { name rank }
+        characters(sort: [ROLE, RELEVANCE]) {
+          nodes {
+            id
+            name { full }
+            image { large }
+          }
+        }
+        recommendations(sort: RATING_DESC) {
+          nodes {
+            mediaRecommendation {
+              ${MANGA_QUERY_FIELDS}
+              description(asHtml: false)
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { id: Number(id) });
+  return data?.Media || null;
+}
+
+// ─── MangaDex (Reading Content) ─────────────────────────────
+const MANGADEX_BASE = 'https://api.mangadex.org';
+
+export async function getMangaDexId(titleObj) {
+  const titles = [
+    titleObj.english,
+    titleObj.romaji,
+    titleObj.native
+  ].filter(Boolean);
+
+  for (const title of titles) {
+    try {
+      const res = await fetch(`${MANGADEX_BASE}/manga?title=${encodeURIComponent(title)}&limit=1&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`);
+      const data = await res.json();
+      if (data?.data?.length > 0) {
+        return data.data[0].id;
+      }
+    } catch (e) {
+      console.error(`MangaDex search error for ${title}:`, e);
+    }
+  }
+  return null;
+}
+
+export async function getMangaChapters(mangaDexId) {
+  try {
+    // We want to get as many chapters as possible, ordered by chapter number descending
+    const res = await fetch(`${MANGADEX_BASE}/manga/${mangaDexId}/feed?translatedLanguage[]=en&order[chapter]=desc&limit=500&includeEmptyPages=0&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`);
+    const data = await res.json();
+    
+    if (!data?.data) return [];
+
+    // Filter out duplicates (multiple scanlations for the same chapter)
+    // We'll keep the first one we find for each chapter number
+    const seen = new Set();
+    const filtered = data.data.filter(ch => {
+      const num = ch.attributes.chapter;
+      if (!num || seen.has(num)) return false;
+      seen.add(num);
+      return true;
+    });
+
+    return filtered;
+  } catch (e) {
+    console.error('MangaDex chapters error:', e);
+    return [];
+  }
+}
+
+export async function getChapterPages(chapterId) {
+  try {
+    const res = await fetch(`${MANGADEX_BASE}/at-home/server/${chapterId}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const hash = data.chapter.hash;
+    const files = data.chapter.data;
+    const baseUrl = data.baseUrl;
+    return files.map(f => `${baseUrl}/data/${hash}/${f}`);
+  } catch (e) {
+    console.error('MangaDex pages error:', e);
+  }
+}
+
+// ─── Fallback API (MangaHook) ───────────────────────────────
+const FALLBACK_API_BASE = 'https://mangahook-api.vercel.app/api';
+
+export async function getFallbackId(titleObj) {
+  const title = titleObj.english || titleObj.romaji;
+  if (!title) return null;
+
+  try {
+    const res = await fetch(`${FALLBACK_API_BASE}/search/${encodeURIComponent(title)}`);
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) return null;
+    
+    const data = await res.json();
+    return data?.searchData?.[0]?.id || null;
+  } catch (e) {
+    console.error('Fallback search error:', e);
+    return null;
+  }
+}
+
+export async function getFallbackChapters(fallbackId) {
+  try {
+    const res = await fetch(`${FALLBACK_API_BASE}/manga/${fallbackId}`);
+    if (!res.ok) return [];
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) return [];
+
+    const data = await res.json();
+    if (!data?.chapterList) return [];
+    return data.chapterList.map(ch => ({
+      id: ch.path,
+      attributes: {
+        chapter: ch.chapterTitle.replace(/[^0-9.]/g, ''),
+        title: ch.chapterTitle,
+        translatedLanguage: 'en'
+      },
+      isFallback: true
+    })).sort((a, b) => b.attributes.chapter - a.attributes.chapter);
+  } catch (e) {
+    console.error('Fallback chapters error:', e);
+    return [];
+  }
+}
+
+export async function getFallbackPages(mangaId, chapterId) {
+  try {
+    const res = await fetch(`${FALLBACK_API_BASE}/manga/${mangaId}/${chapterId}`);
+    if (!res.ok) return [];
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) return [];
+
+    const data = await res.json();
+    return data?.images || [];
+  } catch (e) {
+    console.error('Fallback pages error:', e);
+    return [];
+  }
 }
 
 // ─── AniList Banner / Extra data ──────────────────────────
