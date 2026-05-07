@@ -182,23 +182,23 @@ export function getStreamUrl(malId, episode = 1) {
 // Fallback embed URLs (try in order if first fails)
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null) {
   const fallbacks = [
-    // 1. VidLink (Best Accuracy - Uses MAL/AniList perfectly)
-    `https://vidlink.pro/embed/anime/${malId}?episode=${episode}`,
+    // 1. SuperEmbed (Nuclear Option - Very high success rate)
+    `https://superembed.stream/embed/anime/${malId}/${episode}`,
     
-    // 2. VidSrc.to (Uses AniList ID for best accuracy)
-    `https://vidsrc.to/embed/anime/${anilistId || malId}/${episode}`,
-    
-    // 3. VidSrc.me (Uses MAL ID)
-    `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episode}`,
-
-    // 4. AutoEmbed (Uses MAL ID)
-    `https://player.autoembed.cc/embed/anime/${malId}/${episode}`,
-
-    // 5. VidSrc.cc
+    // 2. VidSrc.cc (Modern & Fast)
     `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
+    
+    // 3. VidLink (Direct)
+    `https://vidlink.pro/embed/anime/${malId}?episode=${episode}`,
 
-    // 6. 2Embed
+    // 4. VidSrc.xyz
+    `https://vidsrc.xyz/embed/anime/${anilistId || malId}/${episode}`,
+
+    // 5. 2Embed (Legacy)
     `https://www.2embed.cc/embed/anime/${malId}/${episode}`,
+
+    // 6. VidSrc.me
+    `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episode}`,
   ];
   return fallbacks.filter(Boolean);
 }

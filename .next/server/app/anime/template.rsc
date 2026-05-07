@@ -1,0 +1,22 @@
+1:"$Sreact.fragment"
+2:I[4118,[],""]
+3:I[8892,[],""]
+4:I[3956,["282","static/chunks/282-605b3363bd006766.js","103","static/chunks/103-49ded1550ba03e1f.js","633","static/chunks/app/anime/%5Bid%5D/page-ff8986d5768bd194.js"],"default"]
+5:I[1979,["282","static/chunks/282-605b3363bd006766.js","103","static/chunks/103-49ded1550ba03e1f.js","974","static/chunks/app/page-2deb9e1dca319f23.js"],""]
+7:I[9695,[],"OutletBoundary"]
+9:I[4318,[],"AsyncMetadataOutlet"]
+b:I[9695,[],"ViewportBoundary"]
+d:I[9695,[],"MetadataBoundary"]
+e:"$Sreact.suspense"
+10:I[4430,[],""]
+:HL["/_next/static/css/ee5fc5b1e7f0a695.css","style"]
+:HL["/_next/static/css/6ac255dbd53de821.css","style"]
+:HL["/_next/static/css/0d64f7b0b35e77e1.css","style"]
+0:{"P":null,"b":"0-EaJZm2GfXkEhl0Q0j8f","p":"","c":["","anime","template"],"i":false,"f":[[["",{"children":["anime",{"children":[["id","template","d"],{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/ee5fc5b1e7f0a695.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","children":["$","body",null,{"className":"__variable_188709 __variable_9a8899","children":["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","$L4",null,{}],["$","div",null,{"className":"not-found_page__VFIr4","children":["$","div",null,{"className":"not-found_content__cklTM","children":[["$","div",null,{"className":"not-found_code__SJkuV","children":"404"}],["$","h1",null,{"className":"not-found_title__bOfUG","children":"Anime Not Found"}],["$","p",null,{"className":"not-found_desc__cUCJL","children":"Looks like this anime escaped into another dimension."}],["$","$L5",null,{"href":"/","className":"btn btn-primary","id":"not-found-home","children":"▶ Go Back Home"}]]}]}]],[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/0d64f7b0b35e77e1.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]}]]}],{"children":["anime",["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["id","template","d"],["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":["__PAGE__",["$","$1","c",{"children":["$L6",[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/6ac255dbd53de821.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/_next/static/css/0d64f7b0b35e77e1.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","$L7",null,{"children":["$L8",["$","$L9",null,{"promise":"$@a"}]]}]]}],{},null,false]},null,false]},null,false]},null,false],["$","$1","h",{"children":[null,[["$","$Lb",null,{"children":"$Lc"}],null],["$","$Ld",null,{"children":["$","div",null,{"hidden":true,"children":["$","$e",null,{"fallback":null,"children":"$Lf"}]}]}]]}],false]],"m":"$undefined","G":["$10",[]],"s":false,"S":true}
+11:I[6806,["282","static/chunks/282-605b3363bd006766.js","103","static/chunks/103-49ded1550ba03e1f.js","633","static/chunks/app/anime/%5Bid%5D/page-ff8986d5768bd194.js"],"default"]
+6:[["$","$L4",null,{}],["$","$L11",null,{"id":"template"}]]
+c:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+8:null
+12:I[2401,[],"IconMark"]
+a:{"metadata":[["$","title","0",{"children":"AniFlex — Stream Anime Free"}],["$","meta","1",{"name":"description","content":"Watch your favorite anime series for free. Browse trending, seasonal, and popular anime with AniFlex."}],["$","link","2",{"rel":"icon","href":"/icon.png?7a3077a1e82619d9","type":"image/png","sizes":"1024x1024"}],["$","$L12","3",{}]],"error":null,"digest":"$undefined"}
+f:"$a:metadata"

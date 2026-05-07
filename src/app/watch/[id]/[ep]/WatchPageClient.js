@@ -52,7 +52,7 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                 className={`${styles.iframe} ${loaded ? styles.iframeVisible : ''}`}
                 allowFullScreen
                 allow="autoplay; encrypted-media; picture-in-picture"
-                referrerPolicy="origin"
+                referrerPolicy="strict-origin-when-cross-origin"
                 onLoad={() => setLoaded(true)}
                 title={`${title} - Episode ${epNum}`}
                 id="anime-player"
