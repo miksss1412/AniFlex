@@ -107,3 +107,51 @@
 .card:hover .title {
   color: var(--teal-glow);
 }
+
+.scoreBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #f5a623;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  z-index: 5;
+}
+
+.statusDot {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+  z-index: 5;
+}
+
+.playBtn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--teal-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--glow-teal);
+}
+
+.playBtn:hover {
+  transform: scale(1.12);
+}
+
+.playIcon {
+  color: var(--bg-void);
+  font-size: 1.2rem;
+  margin-left: 3px;
+}
