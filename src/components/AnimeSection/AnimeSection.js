@@ -1,11 +1,34 @@
 'use client';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
 import styles from './AnimeSection.module.css';
 
 export default function AnimeSection({ title, anime = [], viewMoreHref }) {
   const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScroll);
+      // Check after initial render and small delay for content loading
+      const timer = setTimeout(checkScroll, 500);
+      return () => {
+        el.removeEventListener('scroll', checkScroll);
+        clearTimeout(timer);
+      };
+    }
+  }, [anime]);
 
   if (!anime.length) return null;
 
@@ -29,25 +52,19 @@ export default function AnimeSection({ title, anime = [], viewMoreHref }) {
             </Link>
           )}
         </div>
-        <div className={styles.controls}>
+      </div>
+      
+      <div className={styles.sliderContainer}>
+        {canScrollLeft && (
           <button 
-            className={styles.scrollBtn} 
+            className={`${styles.scrollBtn} ${styles.left}`} 
             onClick={() => scroll('left')}
             aria-label="Scroll Left"
           >
             ‹
           </button>
-          <button 
-            className={styles.scrollBtn} 
-            onClick={() => scroll('right')}
-            aria-label="Scroll Right"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-      
-      <div className={styles.sliderContainer}>
+        )}
+        
         <div className={styles.slider} ref={scrollRef}>
           {anime.slice(0, 10).map((a, i) => (
             <div key={`${a.mal_id || a.id || i}`} className={styles.slide}>
@@ -55,6 +72,16 @@ export default function AnimeSection({ title, anime = [], viewMoreHref }) {
             </div>
           ))}
         </div>
+
+        {canScrollRight && (
+          <button 
+            className={`${styles.scrollBtn} ${styles.right}`} 
+            onClick={() => scroll('right')}
+            aria-label="Scroll Right"
+          >
+            ›
+          </button>
+        )}
       </div>
     </section>
   );
