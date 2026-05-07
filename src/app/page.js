@@ -54,7 +54,7 @@ export default async function HomePage() {
           <AnimeSection
             title="Recently Updated"
             anime={recentList}
-            viewMoreHref="/search"
+            viewMoreHref="/search?filter=recent"
           />
           <AnimeSection
             title="Seasonal Anime"

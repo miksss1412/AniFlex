@@ -1,18 +1,25 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { 
+  searchAnime, 
+  getTrendingAnime, 
+  getPopularAnime, 
+  getSeasonalAnime,
+  getUpcomingAnime,
+  getRecentAnime
+} from '@/lib/api';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
 import styles from './Search.module.css';
 
-const TYPES    = ['', 'tv', 'movie', 'ova', 'ona', 'special', 'music'];
-const STATUSES = ['', 'airing', 'complete', 'upcoming'];
+const TYPES    = ['', 'TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL', 'MUSIC'];
+const STATUSES = ['', 'RELEASING', 'FINISHED', 'NOT_YET_RELEASED'];
 const SORTS    = [
-  { value: 'popularity', label: 'Popularity' },
-  { value: 'score',      label: 'Score'      },
-  { value: 'rank',       label: 'Rank'       },
-  { value: 'title',      label: 'Title'      },
-  { value: 'episodes',   label: 'Episodes'   },
-  { value: 'start_date', label: 'Newest'     },
+  { value: 'POPULARITY_DESC', label: 'Popularity' },
+  { value: 'SCORE_DESC',      label: 'Score'      },
+  { value: 'TRENDING_DESC',   label: 'Trending'   },
+  { value: 'START_DATE_DESC', label: 'Newest'     },
+  { value: 'EPISODES_DESC',   label: 'Episodes'   },
 ];
 
 export default function SearchClient({ genres = [] }) {
@@ -22,7 +29,7 @@ export default function SearchClient({ genres = [] }) {
   const [type,     setType]     = useState(searchParams.get('type')   || '');
   const [status,   setStatus]   = useState(searchParams.get('status') || '');
   const [genre,    setGenre]    = useState(searchParams.get('genre')  || '');
-  const [sort,     setSort]     = useState('popularity');
+  const [sort,     setSort]     = useState('POPULARITY_DESC');
   const [filter,   setFilter]   = useState(searchParams.get('filter') || '');
   const [results,  setResults]  = useState([]);
   const [loading,  setLoading]  = useState(false);
@@ -35,54 +42,57 @@ export default function SearchClient({ genres = [] }) {
   const doSearch = useCallback(async (q, tp, st, gn, srt, pg, append = false) => {
     setLoading(true);
     try {
-      // Map genre name to MAL genre ID
-      const genreObj = genres.find(g => g.name === gn);
-      const genreId  = genreObj?.mal_id || '';
-
-      let url;
+      let data;
+      
       if (!q && !tp && !st && !gn) {
         // Use filter shortcuts
-        if (filter === 'trending')       url = `/api/proxy?path=/top/anime?filter=airing&page=${pg}&limit=24`;
-        else if (filter === 'popular')   url = `/api/proxy?path=/top/anime?filter=bypopularity&page=${pg}&limit=24`;
-        else if (filter === 'seasonal')  url = `/api/proxy?path=/seasons/now?page=${pg}&limit=24`;
-        else                             url = `/api/proxy?path=/top/anime?filter=bypopularity&page=${pg}&limit=24`;
+        if (filter === 'trending')       data = await getTrendingAnime(pg, 24);
+        else if (filter === 'popular')   data = await getPopularAnime(pg, 24);
+        else if (filter === 'seasonal')  data = await getSeasonalAnime(pg, 24);
+        else if (filter === 'upcoming')  data = await getUpcomingAnime(pg, 24);
+        else if (filter === 'recent')    data = await getRecentAnime(pg, 24);
+        else                             data = await getPopularAnime(pg, 24);
+
+        setResults(prev => append ? [...prev, ...data] : data);
+        setHasMore(data.length === 24);
       } else {
-        const params = new URLSearchParams({
-          q: q || '',
-          page: pg,
-          limit: 24,
-          sfw: true,
-          order_by: srt,
-          sort: 'desc',
-        });
-        if (tp)      params.set('type', tp);
-        if (st)      params.set('status', st);
-        if (genreId) params.set('genres', genreId);
-        url = `/api/proxy?path=/anime?${params}`;
+        const genreList = gn ? [gn] : [];
+        const result = await searchAnime(q, { page: pg, genres: genreList, type: tp, status: st, sort: srt });
+        
+        setResults(prev => append ? [...prev, ...result.results] : result.results);
+        setHasMore(result.pagination?.has_next_page || false);
       }
-
-      const res  = await fetch(url);
-      const data = await res.json();
-      const list = data.data || [];
-      const pag  = data.pagination;
-
-      setResults(prev => append ? [...prev, ...list] : list);
-      setHasMore(pag?.has_next_page || false);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [genres, filter]);
+  }, [filter]);
 
   // Initial search on mount & param change
   useEffect(() => {
     const q  = searchParams.get('q')      || '';
     const f  = searchParams.get('filter') || '';
     const g  = searchParams.get('genre')  || '';
-    setQuery(q); setInputVal(q); setFilter(f); setGenre(g);
+    const t  = searchParams.get('type')   || '';
+    const s  = searchParams.get('status') || '';
+    
+    // If we have a filter shortcut, reset other filters
+    if (f) {
+      setType(''); setStatus(''); setGenre('');
+    } else {
+      if (t) setType(t);
+      if (s) setStatus(s);
+      if (g) setGenre(g);
+    }
+
+    setQuery(q); 
+    setInputVal(q); 
+    setFilter(f); 
     setPage(1);
-    doSearch(q, type, status, g, sort, 1);
+    
+    // Call search with the values from params to avoid stale state issues
+    doSearch(q, f ? '' : (t || type), f ? '' : (s || status), g || genre, sort, 1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -110,7 +120,9 @@ export default function SearchClient({ genres = [] }) {
   const filterLabel =
     filter === 'trending' ? '🔥 Trending' :
     filter === 'popular'  ? '🏆 Popular'  :
-    filter === 'seasonal' ? '📅 Seasonal' : '🔍 Browse';
+    filter === 'seasonal' ? '📅 Seasonal' : 
+    filter === 'upcoming' ? '🚀 Upcoming' : 
+    filter === 'recent'   ? '🕒 Recently Updated' : '🔍 Browse';
 
   return (
     <div className={styles.page}>
