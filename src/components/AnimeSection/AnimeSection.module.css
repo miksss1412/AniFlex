@@ -22,14 +22,27 @@
 
 .viewMore {
   font-size: 0.85rem;
-  color: var(--teal-mid);
-  opacity: 0.7;
+  font-weight: 600;
+  color: var(--text-muted);
   transition: all 0.3s ease;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
 }
+
 .viewMore:hover { 
   color: var(--teal-glow);
-  opacity: 1;
+  background: rgba(0, 255, 225, 0.08);
+}
+
+.viewMore svg {
+  transition: transform 0.3s ease;
+}
+
+.viewMore:hover svg {
   transform: translateX(4px);
 }
 

@@ -46,12 +46,15 @@ export default function AnimeSection({ title, anime = [], viewMoreHref }) {
       <div className={styles.header}>
         <div className={styles.titleWrap}>
           <h2 className="section-title">{title}</h2>
-          {viewMoreHref && (
-            <Link href={viewMoreHref} className={styles.viewMore}>
-              View All →
-            </Link>
-          )}
         </div>
+        {viewMoreHref && (
+          <Link href={viewMoreHref} className={styles.viewMore}>
+            <span>View All</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </Link>
+        )}
       </div>
       
       <div className={styles.sliderContainer}>
