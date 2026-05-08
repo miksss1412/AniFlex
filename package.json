@@ -12,7 +12,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "aniwatch": "^2.27.9",
     "cheerio": "^1.2.0",
+    "hls.js": "^1.6.16",
     "next": "15.5.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

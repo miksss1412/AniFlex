@@ -54,7 +54,7 @@ export default function AnimeDetailClient({
   const banner     = extra?.bannerImage || null;
   const cover      = anime.images?.jpg?.large_image_url || extra?.coverImage?.large || '';
   const title      = anime.title_english || anime.title || '';
-  const synopsis   = anime.synopsis || extra?.description?.replace(/<[^>]*>/g,'') || '';
+  const synopsis   = (anime.synopsis || extra?.description || '').replace(/\n/g, '<br />');
   const score      = anime.score;
   const rank       = anime.rank;
   const popularity = anime.popularity;
@@ -185,7 +185,7 @@ export default function AnimeDetailClient({
           {/* Synopsis */}
           <div className={styles.synopsis}>
             <h2 className={styles.sectionHead}>Synopsis</h2>
-            <p>{synopsis || 'No synopsis available.'}</p>
+            <div className={styles.synopsisContent} dangerouslySetInnerHTML={{ __html: synopsis || 'No synopsis available.' }} />
           </div>
 
           {/* Tabs */}

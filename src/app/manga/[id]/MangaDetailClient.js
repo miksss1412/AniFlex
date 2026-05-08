@@ -12,7 +12,7 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
   const banner = manga.bannerImage;
   const cover = manga.coverImage?.extraLarge || manga.coverImage?.large || '';
   const title = manga.title.english || manga.title.romaji || '';
-  const synopsis = manga.description?.replace(/<[^>]*>/g, '') || '';
+  const synopsis = (manga.description || '').replace(/\n/g, '<br />');
   const score = manga.averageScore ? (manga.averageScore / 10).toFixed(1) : null;
   const status = manga.status || '';
   const format = manga.format || '';
@@ -113,7 +113,7 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
 
           <div className={styles.synopsis}>
             <h2 className={styles.sectionHead}>Synopsis</h2>
-            <p>{synopsis || 'No synopsis available.'}</p>
+            <div className={styles.synopsisContent} dangerouslySetInnerHTML={{ __html: synopsis || 'No synopsis available.' }} />
           </div>
 
           <div className={styles.tabs}>

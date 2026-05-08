@@ -98,17 +98,21 @@
 
 .sliderContainer {
   position: relative;
-  overflow: hidden; /* Prevents slider from expanding page width */
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .slider {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   overflow-x: auto;
+  overflow-y: visible;
   scroll-behavior: smooth;
-  padding-bottom: 15px;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  padding: 8px 4px 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .slider::-webkit-scrollbar {
@@ -116,22 +120,22 @@
 }
 
 .slide {
-  flex: 0 0 calc(14.28% - 18px); /* Default 7 items for smaller cards */
-  min-width: 120px;
+  flex: 0 0 160px;
+  width: 160px;
 }
 
 @media (max-width: 1400px) {
-  .slide { flex: 0 0 calc(16.66% - 17px); min-width: 120px; } /* 6 items */
+  .slide { flex: 0 0 150px; width: 150px; }
 }
 @media (max-width: 1100px) {
-  .slide { flex: 0 0 calc(20% - 16px); min-width: 110px; } /* 5 items */
+  .slide { flex: 0 0 140px; width: 140px; }
 }
 @media (max-width: 850px) {
-  .slide { flex: 0 0 calc(28% - 12px); min-width: 100px; } /* ~3.5 items */
+  .slide { flex: 0 0 130px; width: 130px; }
 }
 @media (max-width: 600px) {
-  .slide { flex: 0 0 calc(33.33% - 10px); min-width: 100px; } /* 3 items */
+  .slide { flex: 0 0 140px; width: 140px; }
 }
 @media (max-width: 450px) {
-  .slide { flex: 0 0 calc(45% - 8px); min-width: 90px; } /* ~2.2 items */
+  .slide { flex: 0 0 130px; width: 130px; }
 }

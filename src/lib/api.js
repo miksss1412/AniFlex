@@ -633,15 +633,20 @@ export async function getGenres() {
 
 // ─── Streaming embed URL builder ──────────────────────────
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, title = "") {
+  const animePaheParams = new URLSearchParams({
+    title,
+    episode: episode.toString(),
+  });
+  if (anilistId) animePaheParams.set('anilistId', anilistId.toString());
+
   const fallbacks = [
-    { name: 'Server 1', url: `/api/anime/stream/animepahe?title=${encodeURIComponent(title)}&episode=${episode}` },
+    { name: 'Server 1', url: `/api/anime/stream/animepahe?${animePaheParams}` },
     { name: 'Server 2', url: `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true` },
     { name: 'Server 3', url: `https://vidsrc.to/embed/anime/${malId}/${episode}` },
     { name: 'Server 4', url: `https://vidsrc.me/embed/anime?malId=${malId}&ep=${episode}` }
   ];
   return fallbacks.filter(f => f.url);
 }
-
 
 
 
