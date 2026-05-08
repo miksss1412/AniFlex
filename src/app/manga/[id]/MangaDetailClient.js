@@ -204,6 +204,7 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
                 title="You Might Also Like" 
                 anime={manga.recommendations.nodes.map(n => n.mediaRecommendation)}
                 isManga={true}
+                hideYear={true}
               />
             </div>
           )}

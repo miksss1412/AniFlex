@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar/Navbar';
 import { getStreamUrlFallbacks } from '@/lib/api';
@@ -13,6 +13,12 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
   const streams = getStreamUrlFallbacks(animeId, epNum, anilistId, anime?.title_english || anime?.title || '');
   console.log('[WatchPageClient] Stream URLs:', streams);
   const [streamIdx, setStreamIdx] = useState(0);
+
+  // Reset stream when episode changes
+  useEffect(() => {
+    setStreamIdx(0);
+    console.log(`[WatchPage] Switched to Episode ${epNum}`);
+  }, [epNum]);
 
   const prevEp = epNum > 1 ? epNum - 1 : null;
   const nextEp = total && epNum < total ? epNum + 1 : null;
@@ -40,8 +46,8 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
             {/* Player */}
             <div className={styles.playerWrap}>
               <iframe
-                key={streams[streamIdx]}
-                src={streams[streamIdx]}
+                key={streams[streamIdx]?.url}
+                src={streams[streamIdx]?.url}
                 className={styles.iframe}
                 allowFullScreen
                 allow="autoplay; encrypted-media; picture-in-picture"
@@ -58,9 +64,9 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                   key={i}
                   id={`server-${i + 1}`}
                   className={`${styles.serverBtn} ${streamIdx === i ? styles.serverActive : ''}`}
-                  onClick={() => { setStreamIdx(i); setLoaded(false); }}
+                  onClick={() => setStreamIdx(i)}
                 >
-                  Server {i + 1}
+                  {streams[i].name}
                 </button>
               ))}
             </div>

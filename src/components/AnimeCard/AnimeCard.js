@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './AnimeCard.module.css';
 
-export default function AnimeCard({ anime, priority = false, isManga = false }) {
+export default function AnimeCard({ anime, priority = false, isManga = false, showYear = true }) {
   const [imgError, setImgError] = useState(false);
 
   const id      = anime.idMal || anime.mal_id || anime.id;
@@ -77,7 +77,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }) 
         <div className={styles.metaOverlay}>
           {displayType && <span className={styles.metaTag}>{displayType}</span>}
           {eps  && <span className={styles.metaTag}>{eps} {isManga ? 'CH' : 'EP'}</span>}
-          {year && <span className={styles.metaTag}>{year}</span>}
+          {year && showYear && <span className={styles.metaTag}>{year}</span>}
         </div>
       </div>
 

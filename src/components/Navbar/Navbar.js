@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { searchAnime } from '@/lib/api';
+import { searchAnime, searchManga } from '@/lib/api';
 import styles from './Navbar.module.css';
 
 function NavLinks() {
@@ -99,7 +99,9 @@ export default function Navbar() {
     e.preventDefault();
     if (query.trim()) {
       setShowSuggestions(false);
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      const isMangaPage = pathname.startsWith('/manga');
+      const typeParam = isMangaPage ? '&type=manga' : '';
+      router.push(`/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
     }
   };
 
@@ -118,7 +120,9 @@ export default function Navbar() {
     debounceRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await searchAnime(val, { page: 1, sort: 'SEARCH_MATCH' });
+        const isMangaPage = pathname.startsWith('/manga');
+        const searchFn = isMangaPage ? searchManga : searchAnime;
+        const res = await searchFn(val, { page: 1, sort: 'SEARCH_MATCH' });
         setSuggestions(res.results.slice(0, 6));
         setShowSuggestions(true);
       } catch (err) {
@@ -143,7 +147,9 @@ export default function Navbar() {
         e.preventDefault();
         const anime = suggestions[activeIndex];
         setShowSuggestions(false);
-        router.push(`/anime/${anime.idMal || anime.id}`);
+        const isMangaPage = pathname.startsWith('/manga');
+        const targetUrl = isMangaPage ? `/manga/${anime.id}` : `/anime/${anime.idMal || anime.id}`;
+        router.push(targetUrl);
       }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
@@ -180,7 +186,7 @@ export default function Navbar() {
               ref={inputRef}
               id="navbar-search"
               type="text"
-              placeholder="Search anime..."
+              placeholder={`Search ${pathname.startsWith('/manga') ? 'manga' : 'anime'}...`}
               value={query}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -197,7 +203,7 @@ export default function Navbar() {
                   suggestions.map((anime, index) => (
                     <Link 
                       key={anime.id} 
-                      href={`/anime/${anime.idMal || anime.id}`}
+                      href={pathname.startsWith('/manga') ? `/manga/${anime.id}` : `/anime/${anime.idMal || anime.id}`}
                       className={`${styles.suggestionItem} ${activeIndex === index ? styles.activeSuggestion : ''}`}
                       onClick={() => setShowSuggestions(false)}
                       onMouseEnter={() => setActiveIndex(index)}
@@ -222,7 +228,7 @@ export default function Navbar() {
                 
                 {suggestions.length > 0 && !isSearching && (
                   <Link 
-                    href={`/search?q=${encodeURIComponent(query.trim())}`}
+                    href={`/search?q=${encodeURIComponent(query.trim())}${pathname.startsWith('/manga') ? '&type=manga' : ''}`}
                     className={styles.viewAllResults}
                     onClick={() => setShowSuggestions(false)}
                   >

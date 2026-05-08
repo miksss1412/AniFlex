@@ -265,6 +265,7 @@ export default function AnimeDetailClient({
               <AnimeSection 
                 title="You Might Also Like" 
                 anime={recommendations} 
+                hideYear={true}
               />
             </div>
           )}

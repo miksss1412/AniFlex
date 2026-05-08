@@ -205,49 +205,120 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
   };
 }
 
-// Simple in‑memory cache for streaming data (TTL 5 min)
-const streamingCache = new Map();
-function getStreamingData(malId) {
-  const cacheKey = `streaming-${malId}`;
-  const now = Date.now();
-  const entry = streamingCache.get(cacheKey);
-  if (entry && now - entry.timestamp < 5 * 60 * 1000) {
-    return Promise.resolve(entry.data);
-  }
-  // Use jikanFetch with its own retry/backoff logic
-  return jikanFetch(`/anime/${malId}/streaming`).then(data => {
-    streamingCache.set(cacheKey, { data, timestamp: Date.now() });
-    return data;
-  });
-}
-
 export async function getAnimeById(id) {
-  // Give the critical anime lookup more retries (5) to survive rate limits
-  const anime      = await jikanFetch(`/anime/${id}/full`, 5);
-  await delay(350); 
-  const episodes   = await jikanFetch(`/anime/${id}/episodes?page=1`);
-  await delay(350);
-  const characters = await jikanFetch(`/anime/${id}/characters`, 3, { cache: 'no-store' });
-  await delay(350);
-  const streaming  = await getStreamingData(id);
+  const QUERY = `
+    query ($malId: Int) {
+      Media(idMal: $malId, type: ANIME) {
+        id
+        idMal
+        title { romaji english native }
+        synonyms
+        source
+        coverImage { extraLarge large color }
+        bannerImage
+        description(asHtml: false)
+        averageScore
+        popularity
+        genres
+        studios(isMain: true) { nodes { name } }
+        episodes
+        status
+        season
+        seasonYear
+        format
+        trailer { id site }
+        nextAiringEpisode { episode }
+        startDate { year month day }
+        duration
+        externalLinks { site url }
+        characters(sort: [ROLE, RELEVANCE]) {
+          nodes {
+            id
+            name { full }
+            image { large }
+          }
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { malId: Number(id) });
+  
+  if (!data?.Media) {
+    return { anime: null, episodes: [], pagination: null, characters: [], streaming: [] };
+  }
+
+  const AL = data.Media;
+  
+  const mappedAnime = {
+    mal_id: AL.idMal || id,
+    images: { jpg: { large_image_url: AL.coverImage?.extraLarge || AL.coverImage?.large } },
+    title_english: AL.title?.english,
+    title: AL.title?.romaji || AL.title?.english,
+    title_japanese: AL.title?.native,
+    title_synonyms: AL.synonyms,
+    synopsis: AL.description,
+    score: AL.averageScore ? (AL.averageScore / 10).toFixed(2) : null,
+    rank: null,
+    popularity: AL.popularity,
+    genres: AL.genres?.map(name => ({ name })) || [],
+    studios: AL.studios?.nodes?.map(s => ({ name: s.name })) || [],
+    status: AL.status,
+    type: AL.format,
+    episodes: AL.episodes,
+    aired: { string: AL.startDate?.year ? `${AL.startDate.year}` : '' },
+    duration: AL.duration ? `${AL.duration} min per ep` : '',
+    source: AL.source,
+  };
+
+  const epsCount = AL.episodes || (AL.nextAiringEpisode ? AL.nextAiringEpisode.episode - 1 : 24);
+  const mappedEpisodes = Array.from({ length: Math.max(0, epsCount) }).map((_, i) => ({
+    mal_id: i + 1,
+    title: `Episode ${i + 1}`,
+  }));
+
+  const mappedCharacters = (AL.characters?.nodes || []).slice(0, 12).map(c => ({
+    character: {
+      mal_id: c.id,
+      name: c.name?.full,
+      images: { jpg: { image_url: c.image?.large } }
+    },
+    role: 'Main'
+  }));
+
+  const mappedStreaming = AL.externalLinks?.filter(l => ['Crunchyroll', 'Netflix', 'Hulu', 'Funimation', 'Amazon', 'HIDIVE'].includes(l.site)).map(link => ({
+    name: link.site,
+    url: link.url
+  })) || [];
 
   return {
-    anime:      anime?.data || null,
-    episodes:   episodes?.data || [],
-    pagination: episodes?.pagination || null,
-    characters: characters?.data?.slice(0, 12) || [],
-    streaming:  streaming?.data || [],
+    anime: mappedAnime,
+    episodes: mappedEpisodes,
+    pagination: { has_next_page: false, last_visible_page: 1 },
+    characters: mappedCharacters,
+    streaming: mappedStreaming
   };
 }
 
 export async function getAnimeEpisodes(id, page = 1) {
-  const data = await jikanFetch(`/anime/${id}/episodes?page=${page}`);
-  return { episodes: data?.data || [], pagination: data?.pagination };
+  return { episodes: [], pagination: { has_next_page: false } };
 }
 
 export async function getAnimeRecommendations(id) {
-  const data = await jikanFetch(`/anime/${id}/recommendations`);
-  return data?.data?.slice(0, 12).map(r => r.entry) || [];
+  const QUERY = `
+    query ($malId: Int) {
+      Media(idMal: $malId, type: ANIME) {
+        recommendations(sort: RATING_DESC) {
+          nodes {
+            mediaRecommendation {
+              ${ANIME_QUERY_FIELDS}
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await anilistFetch(QUERY, { malId: Number(id) });
+  return data?.Media?.recommendations?.nodes?.map(n => n.mediaRecommendation).filter(Boolean).slice(0, 12) || [];
 }
 
 // ─── Manga API (AniList + MangaDex) ──────────────────────────
@@ -443,7 +514,7 @@ export async function getChapterPages(chapterId) {
     const baseUrl = data.baseUrl;
     return files.map(f => `${baseUrl}/data/${hash}/${f}`);
   } catch (e) {
-    console.error('MangaDex pages error:', e);
+    return [];
   }
 }
 
@@ -561,30 +632,18 @@ export async function getGenres() {
 }
 
 // ─── Streaming embed URL builder ──────────────────────────
-// We use vidsrc.to (public embed service) for video streaming
-// URL format: https://vidsrc.to/embed/anime/{mal_id}/{episode}
-export function getStreamUrl(malId, episode = 1) {
-  return `https://vidsrc.to/embed/anime/${malId}/${episode}`;
-}
-
-// Fallback embed URLs (try in order if first fails)
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, title = "") {
-  // Generate a URL-friendly slug from the anime title (e.g., "One Piece" -> "one-piece")
-  const slug = title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
-
   const fallbacks = [
-    // 1. VidSrc.vip (Extremely fast, unrestricted mirror)
-    `https://vidsrc.vip/embed/anime/${malId}/${episode}`,
-
-    // 2. Playtaku / Embtaku (Active GoLoad/Vidstreaming mirrors, highly reliable but strict rate limits)
-    slug ? `https://playtaku.net/streaming.php?id=${slug}-episode-${episode}` : null,
-    slug ? `https://embtaku.pro/streaming.php?id=${slug}-episode-${episode}` : null,
-
-    // 4. VidLink (Very accurate, but One Piece mapping might be broken)
-    `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true`,
-
-    // 5. VidSrc.cc (Currently having Cloudflare iframe blocks, but good fallback)
-    `https://vidsrc.cc/v2/embed/anime/${malId}/${episode}`,
+    { name: 'Server 1', url: `/api/anime/stream/animepahe?title=${encodeURIComponent(title)}&episode=${episode}` },
+    { name: 'Server 2', url: `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true` },
+    { name: 'Server 3', url: `https://vidsrc.to/embed/anime/${malId}/${episode}` },
+    { name: 'Server 4', url: `https://vidsrc.me/embed/anime?malId=${malId}&ep=${episode}` }
   ];
-  return fallbacks.filter(Boolean);
+  return fallbacks.filter(f => f.url);
 }
+
+
+
+
+
+

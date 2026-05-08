@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './MangaReader.module.css';
 
-export default function MangaReaderClient({ manga, pages, chapterId }) {
+export default function MangaReaderClient({ manga, pages, chapterId, allChapters = [], source }) {
   const [showNav, setShowNav] = useState(true);
 
   useEffect(() => {
@@ -20,6 +20,14 @@ export default function MangaReaderClient({ manga, pages, chapterId }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Find current chapter index and navigation targets
+  // Note: allChapters is typically sorted DESCENDING (latest first)
+  const currentIndex = allChapters.findIndex(ch => ch.id === chapterId);
+  const nextChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : null;
+  const prevChapter = currentIndex !== -1 && currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : null;
+
+  const getChapterUrl = (id) => `/manga/read/${manga.id}/${id}${source === 'fallback' ? '?source=fallback' : ''}`;
+
   return (
     <div className={styles.reader}>
       {/* Reader Nav */}
@@ -31,10 +39,31 @@ export default function MangaReaderClient({ manga, pages, chapterId }) {
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
             </span>
-            <span className={styles.backText}>Back to Manga</span>
+            <span className={styles.backText}>Back</span>
           </Link>
+
           <div className={styles.titleInfo}>
             <h1 className={styles.mangaTitle}>{manga.title.english || manga.title.romaji}</h1>
+            <span className={styles.chapterNum}>
+              {allChapters[currentIndex]?.attributes?.chapter ? `Chapter ${allChapters[currentIndex].attributes.chapter}` : 'Reading'}
+            </span>
+          </div>
+
+          <div className={styles.navActions}>
+            {prevChapter && (
+              <Link href={getChapterUrl(prevChapter.id)} className={styles.navActionBtn} title="Previous Chapter">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </Link>
+            )}
+            {nextChapter && (
+              <Link href={getChapterUrl(nextChapter.id)} className={styles.navActionBtn} title="Next Chapter">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -65,9 +94,37 @@ export default function MangaReaderClient({ manga, pages, chapterId }) {
       <div className={styles.bottomControls}>
         <div className="container">
            <p className={styles.endNote}>End of Chapter</p>
-           <Link href={`/manga/${manga.id}`} className="btn btn-secondary">
-             Return to Chapter List
-           </Link>
+           
+           <div className={styles.bottomActions}>
+             {prevChapter && (
+               <Link href={getChapterUrl(prevChapter.id)} className="btn btn-secondary">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+                   <polyline points="15 18 9 12 15 6"></polyline>
+                 </svg>
+                 Prev
+               </Link>
+             )}
+
+             <Link href={`/manga/${manga.id}`} className="btn btn-secondary" title="Chapter List">
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                 <line x1="8" y1="6" x2="21" y2="6"></line>
+                 <line x1="8" y1="12" x2="21" y2="12"></line>
+                 <line x1="8" y1="18" x2="21" y2="18"></line>
+                 <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                 <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                 <line x1="3" y1="18" x2="3.01" y2="18"></line>
+               </svg>
+             </Link>
+
+             {nextChapter && (
+               <Link href={getChapterUrl(nextChapter.id)} className="btn btn-primary">
+                 Next
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '8px'}}>
+                   <polyline points="9 18 15 12 9 6"></polyline>
+                 </svg>
+               </Link>
+             )}
+           </div>
         </div>
       </div>
     </div>
