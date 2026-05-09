@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PROVIDER_ORDER = ['zoro', 'arc', 'kiwi', 'animekai', 'jet', 'gogo'];
+const PROVIDER_ORDER = ['kiwi', 'hop', 'bee', 'zoro', 'animekai', 'jet', 'gogo', 'arc'];
 const CATEGORY_ORDER = ['sub', 'dub'];
 const REQUEST_TIMEOUT_MS = 4000;
 
@@ -14,6 +14,7 @@ export async function GET(request) {
   const preferredProvider = searchParams.get('provider');
   const preferredCategory = searchParams.get('category');
   const baseUrl = getMiruroBaseUrl();
+  const requestOrigin = getRequestOrigin(request);
 
   if (!baseUrl) {
     return NextResponse.json(
@@ -27,7 +28,7 @@ export async function GET(request) {
   }
 
   try {
-    const episodesPayload = await fetchJson(`${baseUrl}/episodes/${encodeURIComponent(anilistId)}`);
+    const episodesPayload = await fetchJson(`${baseUrl}/episodes/${encodeURIComponent(anilistId)}`, requestOrigin);
     const candidate = findEpisodeCandidate(episodesPayload, episode, {
       provider: preferredProvider,
       category: preferredCategory,
@@ -40,7 +41,7 @@ export async function GET(request) {
       );
     }
 
-    const sourcesPayload = await fetchJson(`${baseUrl}/${stripLeadingSlash(candidate.id)}`);
+    const sourcesPayload = await fetchJson(`${baseUrl}/${stripLeadingSlash(candidate.id)}`, requestOrigin);
     const streams = normalizeStreams(sourcesPayload, candidate);
 
     if (!streams.length) {
@@ -64,6 +65,17 @@ export async function GET(request) {
       { status: 502 }
     );
   }
+}
+
+function getRequestOrigin(request) {
+  const envOrigin = process.env.MIRURO_REQUEST_ORIGIN;
+  if (envOrigin) return envOrigin.replace(/\/+$/, '');
+
+  const origin = request.headers.get('origin');
+  if (origin) return origin.replace(/\/+$/, '');
+
+  const requestUrl = new URL(request.url);
+  return `${requestUrl.protocol}//${requestUrl.host}`;
 }
 
 function getMiruroBaseUrl() {
@@ -106,18 +118,51 @@ function findEpisodeCandidate(payload, episodeNumber, preferred = {}) {
 }
 
 function normalizeStreams(payload, candidate) {
-  return (payload?.streams || payload?.sources || [])
-    .map((stream, index) => ({
-      url: stream.url || stream.file,
-      quality: stream.quality || stream.label || (stream.type === 'hls' ? 'Auto' : `Source ${index + 1}`),
-      type: stream.type === 'hls' || stream.isM3U8 || String(stream.url || stream.file).includes('.m3u8') ? 'hls' : 'iframe',
-      isDub: candidate.category === 'dub',
-      provider: `Miruro ${candidate.provider}`,
-      server: candidate.provider,
-      episodeTitle: candidate.title || '',
-    }))
-    .filter((stream) => stream.url)
-    .sort((a, b) => qualityValue(b.quality) - qualityValue(a.quality));
+  const streams = (payload?.streams || payload?.sources || [])
+    .map((stream, index) => {
+      const url = stream.url || stream.file;
+      const isHls = stream.type === 'hls' || stream.isM3U8 || String(url).includes('.m3u8');
+
+      return {
+        url: isHls ? toHlsProxyUrl(url, stream.referer) : url,
+        sourceUrl: url,
+        quality: stream.quality || stream.label || (isHls ? 'Auto' : `Source ${index + 1}`),
+        type: isHls ? 'hls' : 'iframe',
+        isDub: candidate.category === 'dub',
+        provider: `Miruro ${candidate.provider}`,
+        server: candidate.provider,
+        referer: stream.referer || null,
+        episodeTitle: candidate.title || '',
+      };
+    })
+    .filter((stream) => stream.url);
+
+  return preferEmbedsForDuplicateQualities(streams)
+    .sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'hls' ? -1 : 1;
+      return qualityValue(b.quality) - qualityValue(a.quality);
+    });
+}
+
+function preferEmbedsForDuplicateQualities(streams) {
+  const byQuality = new Map();
+
+  for (const stream of streams) {
+    const key = `${stream.isDub ? 'dub' : 'sub'}:${String(stream.quality).toLowerCase()}`;
+    const existing = byQuality.get(key);
+
+    if (!existing || (existing.type === 'hls' && stream.type === 'iframe')) {
+      byQuality.set(key, stream);
+    }
+  }
+
+  return Array.from(byQuality.values());
+}
+
+function toHlsProxyUrl(url, referer) {
+  const params = new URLSearchParams({ url });
+  if (referer) params.set('referer', referer);
+  return `/api/anime/hls-proxy?${params.toString()}`;
 }
 
 function normalizeSubtitles(subtitles = []) {
@@ -128,13 +173,17 @@ function normalizeSubtitles(subtitles = []) {
   })).filter((subtitle) => subtitle.url);
 }
 
-async function fetchJson(url) {
+async function fetchJson(url, requestOrigin) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
     const res = await fetch(url, {
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        Origin: requestOrigin,
+        Referer: `${requestOrigin}/`,
+      },
       cache: 'no-store',
       signal: controller.signal,
     });
