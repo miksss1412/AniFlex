@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar/Navbar';
 import HLSPlayer from '@/components/HLSPlayer/HLSPlayer';
@@ -17,6 +17,8 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
   const [streamError, setStreamError] = useState(null);
   const [qualityIdx, setQualityIdx] = useState(0);
   const [autoPlay, setAutoPlay] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState('miruro');
+  const fetchRunRef = useRef(0);
 
   const prevEp = epNum > 1 ? epNum - 1 : null;
   const nextEp = total && epNum < total ? epNum + 1 : null;
@@ -25,60 +27,57 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
   const epTitle = currentEp?.title || `Episode ${epNum}`;
   const currentStream = streamData?.streams?.[qualityIdx];
   const currentProvider = currentStream?.provider || streamData?.provider || 'Source';
+  const streamProviders = useMemo(
+    () => buildStreamProviders({ title, epNum, anilistId }),
+    [title, epNum, anilistId]
+  );
+  const activeProvider = streamProviders.find((provider) => provider.id === selectedProvider) || streamProviders[0];
+
+  useEffect(() => {
+    if (!streamProviders.some((provider) => provider.id === selectedProvider)) {
+      setSelectedProvider(streamProviders[0]?.id || 'miruro');
+    }
+  }, [streamProviders, selectedProvider]);
 
   const fetchStream = useCallback(async () => {
+    if (!activeProvider) return;
+
+    const runId = fetchRunRef.current + 1;
+    fetchRunRef.current = runId;
+
     setStreamLoading(true);
     setStreamError(null);
     setStreamData(null);
     setQualityIdx(0);
 
     try {
-      const params = new URLSearchParams({ title, episode: epNum.toString() });
-      if (anilistId) params.set('anilistId', anilistId.toString());
+      const { res, data } = await fetchProviderJson(activeProvider.url);
+      if (fetchRunRef.current !== runId) return;
 
-      const providers = [
-        ...(process.env.NEXT_PUBLIC_ENABLE_HIANIME_SCRAPER === 'true'
-          ? [{ name: 'HiAnime', url: `/api/anime/stream/hianime?${params}` }]
-          : []),
-        ...(anilistId ? [{ name: 'Miruro', url: `/api/anime/stream/miruro?${params}` }] : []),
-        { name: 'AnimePahe', url: `/api/anime/stream/animepahe?${params}` },
-      ];
-      const errors = [];
-
-      for (const provider of providers) {
-        try {
-          const { res, data } = await fetchProviderJson(provider.url);
-
-          if (res.ok && data.streams?.length) {
-            const providerName = data.provider || provider.name;
-            setStreamData({
-              ...data,
-              provider: providerName,
-              streams: data.streams.map((stream) => ({
-                ...stream,
-                provider: stream.provider || providerName,
-              })),
-            });
-            return;
-          }
-
-          errors.push(`${provider.name}: ${data.error || res.statusText || 'no stream'}`);
-        } catch (error) {
-          errors.push(`${provider.name}: ${error.message || 'failed to fetch'}`);
-        }
+      if (res.ok && data.streams?.length) {
+        const providerName = data.provider || activeProvider.name;
+        setStreamData({
+          ...data,
+          provider: providerName,
+          streams: data.streams.map((stream) => ({
+            ...stream,
+            provider: stream.provider || providerName,
+          })),
+        });
+        setQualityIdx(Math.max(0, data.streams.findIndex((stream) => stream.type === 'hls')));
+        return;
       }
 
-      setStreamError(
-        errors.length
-          ? `No streams available from the configured providers. ${errors.join(' | ')}`
-          : 'No streams available from the configured providers.'
-      );
-    } catch (e) {
-      setStreamError('Failed to fetch stream. Check your connection.');
+      setStreamError('This server is unavailable for this episode. Try another server or reload.');
+    } catch (error) {
+      if (fetchRunRef.current !== runId) return;
+      setStreamError('Unable to load the selected server right now. Try again in a moment.');
     } finally {
-      setStreamLoading(false);
+      if (fetchRunRef.current === runId) {
+        setStreamLoading(false);
+      }
     }
-  }, [title, epNum, anilistId]);
+  }, [activeProvider]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -110,31 +109,6 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
               <div className={styles.titleBlock}>
                 <span className={styles.kicker}>Now Watching</span>
                 <h1 className={styles.watchTitle}>{title}</h1>
-                <div className={styles.watchMeta}>
-                  <span>Episode {epNum}</span>
-                  <span>{epTitle}</span>
-                  <span>
-                    {currentStream
-                      ? `${currentProvider} / ${currentStream.quality}${currentStream.isDub ? ' Dub' : ' Sub'}`
-                      : 'Finding source'}
-                  </span>
-                </div>
-              </div>
-
-              <div className={styles.headerActions}>
-                {prevEp && (
-                  <Link href={`/watch/${animeId}/${prevEp}`} className={styles.episodeNavBtn}>
-                    Prev
-                  </Link>
-                )}
-                {nextEp && (
-                  <Link
-                    href={`/watch/${animeId}/${nextEp}`}
-                    className={`${styles.episodeNavBtn} ${styles.episodeNavBtnPrimary}`}
-                  >
-                    Next
-                  </Link>
-                )}
               </div>
             </header>
 
@@ -172,54 +146,37 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
               </div>
 
               <div className={styles.playerWrap}>
-                {streamLoading && (
-                  <div className={styles.streamStatus}>
-                    <div className={styles.loadingSpinner} />
-                    <p>Finding stream...</p>
-                    <span className={styles.statusHint}>Trying configured providers</span>
-                  </div>
-                )}
-
-                {!streamLoading && streamError && (
-                  <div className={styles.streamStatus}>
-                    <div className={styles.errorIcon}>!</div>
-                    <p className={styles.errorMsg}>{streamError}</p>
-                    <button className={styles.retryBtn} onClick={fetchStream} type="button">Retry</button>
-                  </div>
-                )}
-
-                {!streamLoading && currentStream?.type === 'iframe' && (
-                  <iframe
-                    src={currentStream.url}
-                    className={styles.iframe}
-                    allowFullScreen
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    title={`${title} - Episode ${epNum}`}
-                  />
-                )}
-
-                {!streamLoading && currentStream && currentStream.type !== 'iframe' && (
-                  <HLSPlayer
-                    src={currentStream.url}
-                    poster={cover}
-                    onEnded={() => {
-                      if (autoPlay && nextEp) {
-                        window.location.href = `/watch/${animeId}/${nextEp}`;
-                      }
-                    }}
-                  />
-                )}
+                <PlayerSurface
+                  key={`${selectedProvider}-${currentStream?.url || streamError || 'loading'}`}
+                  loading={streamLoading}
+                  error={streamError}
+                  stream={currentStream}
+                  title={title}
+                  episode={epNum}
+                  cover={cover}
+                  onEnded={() => {
+                    if (autoPlay && nextEp) {
+                      window.location.href = `/watch/${animeId}/${nextEp}`;
+                    }
+                  }}
+                />
               </div>
 
               <div className={styles.bottomBar}>
-                <div className={styles.nowWatching}>
-                  <span className={styles.nowLabel}>Now Watching</span>
-                  <span className={styles.nowEp}>Episode {epNum} - {epTitle}</span>
-                  <span className={styles.nowHint}>
-                    {currentStream
-                      ? `${currentProvider} / ${currentStream.quality}${currentStream.isDub ? ' / DUB' : ' / SUB'}`
-                      : 'Searching for stream...'}
-                  </span>
+                <div className={styles.serverPanel}>
+                  <span className={styles.serverPanelLabel}>Server</span>
+                  <div className={styles.serverBtns}>
+                    {streamProviders.map((provider) => (
+                      <button
+                        key={provider.id}
+                        className={`${styles.serverBtn} ${selectedProvider === provider.id ? styles.serverActive : ''}`}
+                        onClick={() => setSelectedProvider(provider.id)}
+                        type="button"
+                      >
+                        {provider.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {streamData?.streams?.length > 1 && (
@@ -233,7 +190,7 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                           onClick={() => setQualityIdx(index)}
                           type="button"
                         >
-                          {stream.provider || streamData.provider} {stream.quality}{stream.isDub ? ' Dub' : ''}
+                          {stream.quality}{stream.isDub ? ' Dub' : ''}
                         </button>
                       ))}
                     </div>
@@ -269,15 +226,75 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
                 ))
               )}
             </div>
-
-            <Link href={`/anime/${animeId}`} className={`btn btn-secondary ${styles.backBtn}`} id="back-to-details">
-              Back to Details
-            </Link>
           </aside>
         </div>
       </main>
     </>
   );
+}
+
+function PlayerSurface({
+  loading,
+  error,
+  stream,
+  title,
+  episode,
+  cover,
+  onEnded,
+}) {
+  if (loading) {
+    return (
+      <div className={styles.streamStatus}>
+        <div className={styles.loadingSpinner} />
+        <p>Loading stream...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.streamStatus}>
+        <div className={styles.errorIcon}>!</div>
+        <h2 className={styles.errorTitle}>Stream unavailable</h2>
+        <p className={styles.errorMsg}>{error}</p>
+      </div>
+    );
+  }
+
+  if (!stream) return null;
+
+  if (stream.type === 'iframe') {
+    return (
+      <iframe
+        src={stream.url}
+        className={styles.iframe}
+        allowFullScreen
+        allow="autoplay; encrypted-media; picture-in-picture"
+        title={`${title} - Episode ${episode}`}
+      />
+    );
+  }
+
+  return (
+    <HLSPlayer
+      src={stream.url}
+      poster={cover}
+      onEnded={onEnded}
+    />
+  );
+}
+
+function buildStreamProviders({ title, epNum, anilistId }) {
+  const params = new URLSearchParams({ title, episode: epNum.toString() });
+  if (anilistId) params.set('anilistId', anilistId.toString());
+
+  return [
+    ...(anilistId ? [{ id: 'miruro', name: 'Server 1', url: `/api/anime/stream/miruro?${params}` }] : []),
+    { id: 'animepahe', name: anilistId ? 'Server 2' : 'Server 1', url: `/api/anime/stream/animepahe?${params}` },
+    ...(process.env.NEXT_PUBLIC_ENABLE_HIANIME_SCRAPER === 'true'
+      ? [{ id: 'hianime', name: anilistId ? 'Server 3' : 'Server 2', url: `/api/anime/stream/hianime?${params}` }]
+      : []),
+  ];
 }
 
 async function fetchProviderJson(url) {

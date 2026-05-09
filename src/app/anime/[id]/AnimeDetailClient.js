@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
 import AnimeSection from '@/components/AnimeSection/AnimeSection';
+import ExpandableText from '@/components/ExpandableText/ExpandableText';
 import styles from './AnimeDetail.module.css';
 
 export default function AnimeDetailClient({
@@ -185,7 +186,7 @@ export default function AnimeDetailClient({
           {/* Synopsis */}
           <div className={styles.synopsis}>
             <h2 className={styles.sectionHead}>Synopsis</h2>
-            <div className={styles.synopsisContent} dangerouslySetInnerHTML={{ __html: synopsis || 'No synopsis available.' }} />
+            <ExpandableText html={synopsis || 'No synopsis available.'} maxHeight={160} />
           </div>
 
           {/* Tabs */}

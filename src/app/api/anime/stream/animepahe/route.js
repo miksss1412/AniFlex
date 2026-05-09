@@ -22,7 +22,7 @@ export async function GET(request) {
     }
 
     // Return all streams sorted by quality (best first)
-    return NextResponse.json({ streams, provider: 'AnimePahe' });
+    return NextResponse.json({ streams, provider: 'AnimePahe CH' });
 
   } catch (error) {
     console.error('[AnimePahe API] Error:', error);

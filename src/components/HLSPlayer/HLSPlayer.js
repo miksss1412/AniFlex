@@ -10,6 +10,8 @@ export default function HLSPlayer({ src, onEnded, poster }) {
 
   useEffect(() => {
     if (!src || !videoRef.current) return undefined;
+    let cancelled = false;
+    let nativeLoadedHandler = null;
     setLoading(true);
     setError(null);
 
@@ -35,12 +37,13 @@ export default function HLSPlayer({ src, onEnded, poster }) {
           hls.attachMedia(video);
 
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (cancelled) return;
             setLoading(false);
             video.play().catch(() => {});
           });
 
           hls.on(Hls.Events.ERROR, (_, data) => {
-            if (data.fatal) {
+            if (!cancelled && data.fatal) {
               setError('Stream error. The source may be blocked by CORS. Try refreshing.');
               setLoading(false);
             }
@@ -49,10 +52,12 @@ export default function HLSPlayer({ src, onEnded, poster }) {
           hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = src;
-          video.addEventListener('loadedmetadata', () => {
+          nativeLoadedHandler = () => {
+            if (cancelled) return;
             setLoading(false);
             video.play().catch(() => {});
-          });
+          };
+          video.addEventListener('loadedmetadata', nativeLoadedHandler);
         } else {
           setError('HLS playback is not supported in your browser.');
           setLoading(false);
@@ -66,10 +71,16 @@ export default function HLSPlayer({ src, onEnded, poster }) {
     loadStream();
 
     return () => {
+      cancelled = true;
+      if (nativeLoadedHandler) {
+        video.removeEventListener('loadedmetadata', nativeLoadedHandler);
+      }
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
+      video.removeAttribute('src');
+      video.load();
     };
   }, [src]);
 
