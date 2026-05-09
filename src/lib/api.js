@@ -633,17 +633,18 @@ export async function getGenres() {
 
 // ─── Streaming embed URL builder ──────────────────────────
 export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, title = "") {
-  const animePaheParams = new URLSearchParams({
+  const params = new URLSearchParams({
     title,
     episode: episode.toString(),
   });
-  if (anilistId) animePaheParams.set('anilistId', anilistId.toString());
+  if (anilistId) params.set('anilistId', anilistId.toString());
 
   const fallbacks = [
-    { name: 'Server 1', url: `/api/anime/stream/animepahe?${animePaheParams}` },
-    { name: 'Server 2', url: `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true` },
-    { name: 'Server 3', url: `https://vidsrc.to/embed/anime/${malId}/${episode}` },
-    { name: 'Server 4', url: `https://vidsrc.me/embed/anime?malId=${malId}&ep=${episode}` }
+    { name: 'Server 1', url: `/api/anime/stream/animepahe?${params}` },
+    { name: 'Server 2', url: `/api/anime/stream/miruro?${params}` },
+    { name: 'Server 3', url: `https://vidlink.pro/anime/${malId}/${episode}/sub?fallback=true` },
+    { name: 'Server 4', url: `https://vidsrc.to/embed/anime/${malId}/${episode}` },
+    { name: 'Server 5', url: `https://vidsrc.me/embed/anime?malId=${malId}&ep=${episode}` }
   ];
   return fallbacks.filter(f => f.url);
 }
