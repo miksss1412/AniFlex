@@ -148,7 +148,7 @@ function uniqueByQuality(streams) {
     const key = `${stream.isDub ? 'dub' : 'sub'}:${String(stream.quality).toLowerCase()}`;
     const existing = byQuality.get(key);
 
-    if (!existing || (stream.type === 'hls' && existing.type !== 'hls')) {
+    if (!existing || (stream.type === 'iframe' && existing.type !== 'iframe')) {
       byQuality.set(key, stream);
     }
   }
