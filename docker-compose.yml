@@ -1,0 +1,36 @@
+services:
+  aniflex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:3000"
+    environment:
+      NODE_ENV: production
+      MIRURO_API_BASE: http://miruro:8000
+      ANIME_API_URL: http://miruro:8000
+      MIRURO_REQUEST_ORIGIN: ${MIRURO_REQUEST_ORIGIN}
+      ENABLE_HIANIME_SCRAPER: "false"
+      NEXT_PUBLIC_ENABLE_HIANIME_SCRAPER: "false"
+    depends_on:
+      - miruro
+
+  miruro:
+    build:
+      context: https://github.com/walterwhite-69/Miruro-API.git
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        WORKDIR /app
+        ENV PYTHONDONTWRITEBYTECODE=1
+        ENV PYTHONUNBUFFERED=1
+        COPY requirements.txt .
+        RUN pip install --no-cache-dir -r requirements.txt
+        COPY . .
+        EXPOSE 8000
+        CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      ALLOWED_ORIGINS: ${MIRURO_REQUEST_ORIGIN}
