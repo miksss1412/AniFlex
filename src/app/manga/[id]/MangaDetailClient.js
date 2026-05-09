@@ -6,7 +6,7 @@ import AnimeSection from '@/components/AnimeSection/AnimeSection';
 import ExpandableText from '@/components/ExpandableText/ExpandableText';
 import styles from './MangaDetail.module.css';
 
-export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallback = false }) {
+export default function MangaDetailClient({ manga, chapters, chapterSource }) {
   const [tab, setTab] = useState('chapters');
   const [imgError, setImgError] = useState(false);
 
@@ -25,6 +25,13 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
   const tags = manga.tags?.slice(0, 8) || [];
 
   const tabs = ['chapters', 'characters', 'info'];
+  const activeProvider = chapterSource?.provider || null;
+  const hasAnyProviderMatch = Boolean(
+    chapterSource?.providerSeriesId ||
+    activeProvider ||
+    chapterSource?.attempts?.some(attempt => attempt.providerSeriesId)
+  );
+  const firstChapter = chapters[chapters.length - 1];
 
   return (
     <div className={styles.page}>
@@ -64,16 +71,18 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
           </div>
 
           <div className={styles.sidebarInfo}>
-            {chapters.length > 0 && (
-              <Link
-                href={`/manga/read/${manga.id}/${chapters[chapters.length - 1].id}${chapters[chapters.length - 1].isFallback ? '?source=fallback' : ''}`}
+            {firstChapter && (
+              <ChapterAnchor
+                mangaId={manga.id}
+                chapter={firstChapter}
+                source={activeProvider}
                 className={`btn btn-primary ${styles.readBtn}`}
               >
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style={{ marginRight: '4px' }}>
                   <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                 </svg>
                 Read Chap 1
-              </Link>
+              </ChapterAnchor>
             )}
 
             <div className={styles.stats}>
@@ -132,22 +141,18 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
           {/* Tab: Chapters */}
           {tab === 'chapters' && (
             <div className={styles.chapterList}>
-              {isFallback && (
-                <div className={styles.fallbackNotice}>
-                  <span className={styles.fallbackBadge}>Fallback Mode</span>
-                  <p>Chapters are being served from an alternative source (MangaHook).</p>
-                </div>
-              )}
-              {!mangaDexId ? (
-                <p className={styles.empty}>Manga not found on MangaDex. Reading may be unavailable.</p>
+              {!hasAnyProviderMatch ? (
+                <p className={styles.empty}>No readable English source matched this title yet.</p>
               ) : chapters.length === 0 ? (
-                <p className={styles.empty}>No chapters found for this title.</p>
+                <p className={styles.empty}>No English chapters found for this title.</p>
               ) : (
                 <div className={styles.chapterGrid}>
                   {chapters.map(ch => (
-                    <Link
+                    <ChapterAnchor
                       key={ch.id}
-                      href={`/manga/read/${manga.id}/${ch.id}${ch.isFallback ? '?source=fallback' : ''}`}
+                      mangaId={manga.id}
+                      chapter={ch}
+                      source={activeProvider}
                       className={styles.chCard}
                     >
                       <div className={styles.chMain}>
@@ -157,7 +162,7 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
                       <div className={styles.chMeta}>
                         <span className={styles.chLang}>{ch.attributes.translatedLanguage}</span>
                       </div>
-                    </Link>
+                    </ChapterAnchor>
                   ))}
                 </div>
               )}
@@ -212,6 +217,16 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
         </main>
       </div>
     </div>
+  );
+}
+
+function ChapterAnchor({ mangaId, chapter, source, className, children }) {
+  const internalHref = `/manga/read/${mangaId}/${chapter.id}?source=${chapter.provider || source || 'comick_source'}`;
+
+  return (
+    <Link href={internalHref} className={className}>
+      {children}
+    </Link>
   );
 }
 

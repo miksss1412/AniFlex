@@ -1,11 +1,6 @@
 import Navbar from '@/components/Navbar/Navbar';
-import { 
-  getMangaById, 
-  getMangaDexId, 
-  getMangaChapters,
-  getFallbackId,
-  getFallbackChapters
-} from '@/lib/api';
+import { getMangaById } from '@/lib/api';
+import { getReadableMangaChapters } from '@/lib/mangaProviders';
 import MangaDetailClient from './MangaDetailClient';
 import { notFound } from 'next/navigation';
 
@@ -27,33 +22,15 @@ export default async function MangaPage({ params }) {
     notFound();
   }
 
-  // Get MangaDex ID and chapters
-  let mangaDexId = await getMangaDexId(manga.title);
-  let chapters = [];
-  let isFallback = false;
-  let fallbackMangaId = null;
-
-  if (mangaDexId) {
-    chapters = await getMangaChapters(mangaDexId);
-  }
-
-  // Fallback if no chapters found on MangaDex
-  if (chapters.length === 0) {
-    fallbackMangaId = await getFallbackId(manga.title);
-    if (fallbackMangaId) {
-      chapters = await getFallbackChapters(fallbackMangaId);
-      isFallback = true;
-    }
-  }
+  const chapterSource = await getReadableMangaChapters(manga);
 
   return (
     <>
       <Navbar />
       <MangaDetailClient
         manga={manga}
-        chapters={chapters}
-        mangaDexId={isFallback ? fallbackMangaId : mangaDexId}
-        isFallback={isFallback}
+        chapters={chapterSource.chapters}
+        chapterSource={chapterSource}
       />
     </>
   );

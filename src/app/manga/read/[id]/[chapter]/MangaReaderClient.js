@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './MangaReader.module.css';
 
-export default function MangaReaderClient({ manga, pages, chapterId, allChapters = [], source }) {
+export default function MangaReaderClient({ manga, pages, chapterId, allChapters = [], source, sourceLabel }) {
   const [showNav, setShowNav] = useState(true);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function MangaReaderClient({ manga, pages, chapterId, allChapters
   const nextChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : null;
   const prevChapter = currentIndex !== -1 && currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : null;
 
-  const getChapterUrl = (id) => `/manga/read/${manga.id}/${id}${source === 'fallback' ? '?source=fallback' : ''}`;
+  const getChapterUrl = (chapter) => `/manga/read/${manga.id}/${chapter.id}?source=${chapter.provider || source || 'comick_source'}`;
 
   return (
     <div className={styles.reader}>
@@ -46,19 +46,20 @@ export default function MangaReaderClient({ manga, pages, chapterId, allChapters
             <h1 className={styles.mangaTitle}>{manga.title.english || manga.title.romaji}</h1>
             <span className={styles.chapterNum}>
               {allChapters[currentIndex]?.attributes?.chapter ? `Chapter ${allChapters[currentIndex].attributes.chapter}` : 'Reading'}
+              {sourceLabel ? ` - ${sourceLabel}` : ''}
             </span>
           </div>
 
           <div className={styles.navActions}>
             {prevChapter && (
-              <Link href={getChapterUrl(prevChapter.id)} className={styles.navActionBtn} title="Previous Chapter">
+              <Link href={getChapterUrl(prevChapter)} className={styles.navActionBtn} title="Previous Chapter">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
               </Link>
             )}
             {nextChapter && (
-              <Link href={getChapterUrl(nextChapter.id)} className={styles.navActionBtn} title="Next Chapter">
+              <Link href={getChapterUrl(nextChapter)} className={styles.navActionBtn} title="Next Chapter">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -73,7 +74,7 @@ export default function MangaReaderClient({ manga, pages, chapterId, allChapters
         {pages.length === 0 ? (
           <div className={styles.error}>
             <h2>Unable to load pages</h2>
-            <p>This chapter might be unavailable or MangaDex is experiencing issues.</p>
+            <p>This chapter might be unavailable from the selected source.</p>
             <Link href={`/manga/${manga.id}`} className="btn btn-primary">Go Back</Link>
           </div>
         ) : (
@@ -97,7 +98,7 @@ export default function MangaReaderClient({ manga, pages, chapterId, allChapters
            
            <div className={styles.bottomActions}>
              {prevChapter && (
-               <Link href={getChapterUrl(prevChapter.id)} className="btn btn-secondary">
+               <Link href={getChapterUrl(prevChapter)} className="btn btn-secondary">
                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
                    <polyline points="15 18 9 12 15 6"></polyline>
                  </svg>
@@ -117,7 +118,7 @@ export default function MangaReaderClient({ manga, pages, chapterId, allChapters
              </Link>
 
              {nextChapter && (
-               <Link href={getChapterUrl(nextChapter.id)} className="btn btn-primary">
+               <Link href={getChapterUrl(nextChapter)} className="btn btn-primary">
                  Next
                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '8px'}}>
                    <polyline points="9 18 15 12 9 6"></polyline>

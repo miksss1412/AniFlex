@@ -28,47 +28,59 @@ export async function GET(request) {
       return NextResponse.json({ error: 'No data found for this anime on Miruro' }, { status: 404 });
     }
 
-    // 2. Find the specific episode candidate
+    // 2. Find the specific episode candidates
     console.log('[Miruro Route] Searching for episode:', episode);
-    const candidate = findEpisodeCandidate(episodesPayload, episode, {
+    const candidates = findEpisodeCandidates(episodesPayload, episode, {
       provider: preferredProvider,
       category: preferredCategory,
     });
 
-    if (!candidate?.id) {
+    if (!candidates.length) {
       console.warn('[Miruro Route] Episode candidate not found for number:', episode);
       return NextResponse.json(
         { error: `Episode ${episode} was not found on Miruro.` },
         { status: 404 }
       );
     }
-    console.log('[Miruro Route] Found candidate:', candidate.provider, candidate.category, candidate.id);
 
-    // 3. Get sources using internal Miruro logic
-    const sourcesPayload = await getMiruroSources(
-      candidate.id, 
-      anilistId, 
-      candidate.provider, 
-      candidate.category
-    );
-    
-    if (!sourcesPayload) {
-      return NextResponse.json(
-        { error: 'Could not fetch streaming sources from Miruro.' },
-        { status: 502 }
+    // 3. Get sources using internal Miruro logic. Some Miruro provider
+    // mappings exist but fail at source time, so try the next mapped provider.
+    const failures = [];
+    for (const candidate of candidates) {
+      console.log('[Miruro Route] Trying candidate:', candidate.provider, candidate.category, candidate.id);
+
+      const sourcesPayload = await getMiruroSources(
+        candidate.id,
+        anilistId,
+        candidate.provider,
+        candidate.category
       );
+
+      if (!sourcesPayload) {
+        failures.push(`${candidate.provider}/${candidate.category}: no sources`);
+        continue;
+      }
+
+      const streams = normalizeStreams(sourcesPayload, candidate);
+      if (!streams.length) {
+        failures.push(`${candidate.provider}/${candidate.category}: no playable streams`);
+        continue;
+      }
+
+      return NextResponse.json({
+        streams,
+        provider: `Miruro ${candidate.provider}`,
+        subtitles: normalizeSubtitles(sourcesPayload?.subtitles),
+        intro: sourcesPayload?.intro || null,
+        outro: sourcesPayload?.outro || null,
+      });
     }
 
-    // 4. Normalize and return
-    const streams = normalizeStreams(sourcesPayload, candidate);
-
-    return NextResponse.json({
-      streams,
-      provider: `Miruro ${candidate.provider}`,
-      subtitles: normalizeSubtitles(sourcesPayload?.subtitles),
-      intro: sourcesPayload?.intro || null,
-      outro: sourcesPayload?.outro || null,
-    });
+    console.warn('[Miruro Route] All candidates failed:', failures);
+    return NextResponse.json(
+      { error: 'Could not fetch streaming sources from Miruro.', failures },
+      { status: 502 }
+    );
   } catch (error) {
     console.error('[Miruro API] Error:', error);
     return NextResponse.json(
@@ -78,7 +90,7 @@ export async function GET(request) {
   }
 }
 
-function findEpisodeCandidate(payload, episodeNumber, preferred = {}) {
+function findEpisodeCandidates(payload, episodeNumber, preferred = {}) {
   const providers = payload?.providers || {};
   const providerOrder = unique([
     preferred.provider,
@@ -89,6 +101,7 @@ function findEpisodeCandidate(payload, episodeNumber, preferred = {}) {
     preferred.category,
     ...CATEGORY_ORDER,
   ].filter(Boolean));
+  const candidates = [];
 
   for (const provider of providerOrder) {
     const providerData = providers[provider];
@@ -99,16 +112,16 @@ function findEpisodeCandidate(payload, episodeNumber, preferred = {}) {
       const episodes = Array.isArray(episodeGroups[category]) ? episodeGroups[category] : [];
       const match = episodes.find((item) => Number(item.number) === episodeNumber);
       if (match?.id) {
-        return {
+        candidates.push({
           ...match,
           provider,
           category,
-        };
+        });
       }
     }
   }
 
-  return null;
+  return candidates;
 }
 
 function normalizeStreams(payload, candidate) {
@@ -136,7 +149,7 @@ function normalizeStreams(payload, candidate) {
     .filter(Boolean);
 
   return uniqueByQuality(streams).sort((a, b) => {
-    if (a.type !== b.type) return a.type === 'hls' ? -1 : 1;
+    if (a.type !== b.type) return a.type === 'iframe' ? -1 : 1;
     return qualityValue(b.quality) - qualityValue(a.quality);
   });
 }

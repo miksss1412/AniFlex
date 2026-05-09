@@ -64,7 +64,8 @@ export default function WatchPageClient({ animeId, anilistId, episode, anime, ep
             provider: stream.provider || providerName,
           })),
         });
-        setQualityIdx(Math.max(0, data.streams.findIndex((stream) => stream.type === 'hls')));
+        const preferredIndex = data.streams.findIndex((stream) => stream.type === 'iframe');
+        setQualityIdx(preferredIndex === -1 ? 0 : preferredIndex);
         return;
       }
 

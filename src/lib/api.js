@@ -321,7 +321,7 @@ export async function getAnimeRecommendations(id) {
   return data?.Media?.recommendations?.nodes?.map(n => n.mediaRecommendation).filter(Boolean).slice(0, 12) || [];
 }
 
-// ─── Manga API (AniList + MangaDex) ──────────────────────────
+// ─── Manga API (AniList) ──────────────────────────
 
 const MANGA_QUERY_FIELDS = `
   id
@@ -455,129 +455,6 @@ export async function getMangaById(id) {
   return data?.Media || null;
 }
 
-// ─── MangaDex (Reading Content) ─────────────────────────────
-const MANGADEX_BASE = 'https://api.mangadex.org';
-
-export async function getMangaDexId(titleObj) {
-  const titles = [
-    titleObj.english,
-    titleObj.romaji,
-    titleObj.native
-  ].filter(Boolean);
-
-  for (const title of titles) {
-    try {
-      const res = await fetch(`${MANGADEX_BASE}/manga?title=${encodeURIComponent(title)}&limit=1&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`);
-      const data = await res.json();
-      if (data?.data?.length > 0) {
-        return data.data[0].id;
-      }
-    } catch (e) {
-      console.error(`MangaDex search error for ${title}:`, e);
-    }
-  }
-  return null;
-}
-
-export async function getMangaChapters(mangaDexId) {
-  try {
-    // We want to get as many chapters as possible, ordered by chapter number descending
-    const res = await fetch(`${MANGADEX_BASE}/manga/${mangaDexId}/feed?translatedLanguage[]=en&order[chapter]=desc&limit=500&includeEmptyPages=0&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`);
-    const data = await res.json();
-    
-    if (!data?.data) return [];
-
-    // Filter out duplicates (multiple scanlations for the same chapter)
-    // We'll keep the first one we find for each chapter number
-    const seen = new Set();
-    const filtered = data.data.filter(ch => {
-      const num = ch.attributes.chapter;
-      if (!num || seen.has(num)) return false;
-      seen.add(num);
-      return true;
-    });
-
-    return filtered;
-  } catch (e) {
-    console.error('MangaDex chapters error:', e);
-    return [];
-  }
-}
-
-export async function getChapterPages(chapterId) {
-  try {
-    const res = await fetch(`${MANGADEX_BASE}/at-home/server/${chapterId}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const hash = data.chapter.hash;
-    const files = data.chapter.data;
-    const baseUrl = data.baseUrl;
-    return files.map(f => `${baseUrl}/data/${hash}/${f}`);
-  } catch (e) {
-    return [];
-  }
-}
-
-// ─── Fallback API (MangaHook) ───────────────────────────────
-const FALLBACK_API_BASE = 'https://mangahook-api.vercel.app/api';
-
-export async function getFallbackId(titleObj) {
-  const title = titleObj.english || titleObj.romaji;
-  if (!title) return null;
-
-  try {
-    const res = await fetch(`${FALLBACK_API_BASE}/search/${encodeURIComponent(title)}`);
-    if (!res.ok) return null;
-    const contentType = res.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) return null;
-    
-    const data = await res.json();
-    return data?.searchData?.[0]?.id || null;
-  } catch (e) {
-    console.error('Fallback search error:', e);
-    return null;
-  }
-}
-
-export async function getFallbackChapters(fallbackId) {
-  try {
-    const res = await fetch(`${FALLBACK_API_BASE}/manga/${fallbackId}`);
-    if (!res.ok) return [];
-    const contentType = res.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) return [];
-
-    const data = await res.json();
-    if (!data?.chapterList) return [];
-    return data.chapterList.map(ch => ({
-      id: ch.path,
-      attributes: {
-        chapter: ch.chapterTitle.replace(/[^0-9.]/g, ''),
-        title: ch.chapterTitle,
-        translatedLanguage: 'en'
-      },
-      isFallback: true
-    })).sort((a, b) => b.attributes.chapter - a.attributes.chapter);
-  } catch (e) {
-    console.error('Fallback chapters error:', e);
-    return [];
-  }
-}
-
-export async function getFallbackPages(mangaId, chapterId) {
-  try {
-    const res = await fetch(`${FALLBACK_API_BASE}/manga/${mangaId}/${chapterId}`);
-    if (!res.ok) return [];
-    const contentType = res.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) return [];
-
-    const data = await res.json();
-    return data?.images || [];
-  } catch (e) {
-    console.error('Fallback pages error:', e);
-    return [];
-  }
-}
-
 // ─── AniList Banner / Extra data ──────────────────────────
 export async function getAnilistData(malId) {
   const QUERY = `
@@ -648,8 +525,3 @@ export function getStreamUrlFallbacks(malId, episode = 1, anilistId = null, titl
   ];
   return fallbacks.filter(f => f.url);
 }
-
-
-
-
-

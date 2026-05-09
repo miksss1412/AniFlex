@@ -1,12 +1,5 @@
-import { 
-  getChapterPages, 
-  getMangaById, 
-  getFallbackPages,
-  getFallbackId,
-  getMangaDexId,
-  getMangaChapters,
-  getFallbackChapters
-} from '@/lib/api';
+import { getMangaById } from '@/lib/api';
+import { getReadableMangaPages } from '@/lib/mangaProviders';
 import MangaReaderClient from './MangaReaderClient';
 
 export async function generateMetadata({ params }) {
@@ -22,30 +15,17 @@ export default async function ReadPage({ params, searchParams }) {
   const { id, chapter } = await params;
   const { source } = await searchParams;
   const manga = await getMangaById(id);
-
-  let pages = [];
-  let allChapters = [];
-
-  if (source === 'fallback') {
-    const fallbackId = await getFallbackId(manga.title);
-    pages = await getFallbackPages(fallbackId, chapter);
-    allChapters = await getFallbackChapters(fallbackId);
-  } else {
-    pages = await getChapterPages(chapter);
-    const mangaDexId = await getMangaDexId(manga.title);
-    if (mangaDexId) {
-      allChapters = await getMangaChapters(mangaDexId);
-    }
-  }
+  const readSource = await getReadableMangaPages(manga, chapter, source || 'comick_source');
 
   return (
     <>
       <MangaReaderClient
         manga={manga}
-        pages={pages || []}
+        pages={readSource.pages || []}
         chapterId={chapter}
-        allChapters={allChapters || []}
-        source={source}
+        allChapters={readSource.chapters || []}
+        source={readSource.provider || source}
+        sourceLabel={readSource.providerLabel}
       />
     </>
   );

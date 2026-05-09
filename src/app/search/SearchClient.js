@@ -10,6 +10,8 @@ import {
   getRecentAnime,
   getTrendingManga,
   getPopularManga,
+  getRecentManga,
+  getTopManga,
   searchManga
 } from '@/lib/api';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
@@ -54,12 +56,14 @@ export default function SearchClient({ genres = [] }) {
           data = isMangaSearch ? await getTrendingManga(pg, 24) : await getTrendingAnime(pg, 24);
         } else if (filter === 'popular') {
           data = isMangaSearch ? await getPopularManga(pg, 24) : await getPopularAnime(pg, 24);
+        } else if (filter === 'top') {
+          data = isMangaSearch ? await getTopManga(pg, 24) : await getPopularAnime(pg, 24);
+        } else if (filter === 'recent') {
+          data = isMangaSearch ? await getRecentManga(pg, 24) : await getRecentAnime(pg, 24);
         } else if (filter === 'seasonal' && !isMangaSearch) {
           data = await getSeasonalAnime(pg, 24);
         } else if (filter === 'upcoming' && !isMangaSearch) {
           data = await getUpcomingAnime(pg, 24);
-        } else if (filter === 'recent' && !isMangaSearch) {
-          data = await getRecentAnime(pg, 24);
         } else {
           data = isMangaSearch ? await getPopularManga(pg, 24) : await getPopularAnime(pg, 24);
         }
@@ -159,6 +163,7 @@ export default function SearchClient({ genres = [] }) {
   const filterLabel =
     filter === 'trending' ? 'Trending' :
     filter === 'popular'  ? 'Popular'  :
+    filter === 'top'      ? 'Top Rated' :
     filter === 'seasonal' ? 'Seasonal' : 
     filter === 'upcoming' ? 'Upcoming' : 
     filter === 'recent'   ? 'Recently Updated' : 'Browse';
