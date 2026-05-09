@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 const PROVIDER_ORDER = ['kiwi', 'hop', 'bee', 'zoro', 'animekai', 'jet', 'gogo', 'arc'];
 const CATEGORY_ORDER = ['sub', 'dub'];
-const REQUEST_TIMEOUT_MS = 4000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 12000;
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -60,9 +60,11 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('[Miruro API] Error:', error);
+    const isTimeout = error.name === 'AbortError' || error.message?.includes('timed out');
+
     return NextResponse.json(
-      { error: `Miruro API request failed: ${error.message}` },
-      { status: 502 }
+      { error: isTimeout ? 'Miruro API request timed out. Try reloading or choose another server.' : `Miruro API request failed: ${error.message}` },
+      { status: isTimeout ? 504 : 502 }
     );
   }
 }
@@ -175,7 +177,8 @@ function normalizeSubtitles(subtitles = []) {
 
 async function fetchJson(url, requestOrigin) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const requestTimeoutMs = getRequestTimeoutMs();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
 
   try {
     const res = await fetch(url, {
@@ -193,9 +196,20 @@ async function fetchJson(url, requestOrigin) {
     }
 
     return res.json();
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Miruro API timed out after ${requestTimeoutMs / 1000}s`);
+    }
+
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function getRequestTimeoutMs() {
+  const value = Number(process.env.MIRURO_REQUEST_TIMEOUT_MS);
+  return Number.isFinite(value) && value > 0 ? value : DEFAULT_REQUEST_TIMEOUT_MS;
 }
 
 function stripLeadingSlash(value) {

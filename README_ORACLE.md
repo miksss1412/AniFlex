@@ -38,6 +38,7 @@ Create a local Docker Compose env file. Use your server IP first; replace it wit
 ```bash
 cat > .env <<'EOF'
 MIRURO_REQUEST_ORIGIN=http://YOUR_SERVER_IP
+MIRURO_REQUEST_TIMEOUT_MS=12000
 EOF
 ```
 
