@@ -3,7 +3,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import AnimeSection from '@/components/AnimeSection/AnimeSection';
-import ExpandableText from '@/components/ExpandableText/ExpandableText';
 import styles from './MangaDetail.module.css';
 
 export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallback = false }) {
@@ -114,7 +113,7 @@ export default function MangaDetailClient({ manga, chapters, mangaDexId, isFallb
 
           <div className={styles.synopsis}>
             <h2 className={styles.sectionHead}>Synopsis</h2>
-            <ExpandableText html={synopsis || 'No synopsis available.'} maxHeight={150} />
+            <div className={styles.synopsisContent} dangerouslySetInnerHTML={{ __html: synopsis || 'No synopsis available.' }} />
           </div>
 
           <div className={styles.tabs}>
