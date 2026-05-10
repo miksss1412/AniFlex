@@ -87,25 +87,34 @@ export default function HeroSection({ anime = [], isManga = false }) {
             {isManga ? (
               <>
                 <Link href={`/manga/${item.id}`} className="btn btn-primary" id={`hero-read-${item.id}`}>
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style={{ marginRight: '4px' }}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                   </svg>
                   Read Now
                 </Link>
                 <Link href={`/manga/${item.id}`} className="btn btn-secondary" id={`hero-details-${item.id}`}>
-                  ℹ Details
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/>
+                  </svg>
+                  Details
                 </Link>
               </>
             ) : (
               <>
                 {malId && (
                   <Link href={`/anime/${malId}`} className="btn btn-primary" id={`hero-watch-${malId}`}>
-                    <span>▶</span> Watch Now
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    Watch Now
                   </Link>
                 )}
                 {malId && (
                   <Link href={`/anime/${malId}`} className="btn btn-secondary" id={`hero-details-${malId}`}>
-                    ℹ Details
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/>
+                    </svg>
+                    Details
                   </Link>
                 )}
               </>

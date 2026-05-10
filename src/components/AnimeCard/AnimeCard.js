@@ -42,7 +42,9 @@ export default function AnimeCard({ anime, priority = false, isManga = false, sh
           />
         ) : (
           <div className={styles.fallback}>
-            <span>▶</span>
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor" opacity="0.3">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
           </div>
         )}
 

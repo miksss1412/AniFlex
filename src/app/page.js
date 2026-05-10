@@ -56,26 +56,31 @@ export default async function HomePage() {
             title="Trending Now"
             anime={trendingList}
             viewMoreHref="/search?filter=trending"
+            cardSize="large"
           />
           <AnimeSection
             title="Recently Updated"
             anime={recentList}
             viewMoreHref="/search?filter=recent"
+            cardSize="large"
           />
           <AnimeSection
             title="Seasonal Anime"
             anime={seasonalList}
             viewMoreHref="/search?filter=seasonal"
+            cardSize="large"
           />
           <AnimeSection
             title="Most Popular"
             anime={popularList}
             viewMoreHref="/search?filter=popular"
+            cardSize="large"
           />
           <AnimeSection
             title="Upcoming Anime"
             anime={upcomingList}
             viewMoreHref="/search?filter=upcoming"
+            cardSize="large"
           />
           <BroadcastSchedule schedules={scheduleList} />
         </div>

@@ -102,7 +102,11 @@ export default function AnimeDetailClient({
                 priority
               />
             ) : (
-              <div className={styles.coverFallback}><span>▶</span></div>
+              <div className={styles.coverFallback}>
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor" opacity="0.3">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
             )}
           </div>
 
@@ -115,7 +119,10 @@ export default function AnimeDetailClient({
                 className={`btn btn-primary ${styles.watchBtn}`}
                 id="detail-watch-ep1"
               >
-                <span>▶</span> Watch Ep 1
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                Watch Ep 1
               </Link>
             )}
 

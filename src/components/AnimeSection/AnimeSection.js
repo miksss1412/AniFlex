@@ -4,7 +4,14 @@ import Link from 'next/link';
 import AnimeCard from '@/components/AnimeCard/AnimeCard';
 import styles from './AnimeSection.module.css';
 
-export default function AnimeSection({ title, anime = [], viewMoreHref, isManga = false, hideYear = false }) {
+export default function AnimeSection({
+  title,
+  anime = [],
+  viewMoreHref,
+  isManga = false,
+  hideYear = false,
+  cardSize = 'default',
+}) {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -70,7 +77,10 @@ export default function AnimeSection({ title, anime = [], viewMoreHref, isManga 
           </button>
         )}
         
-        <div className={styles.slider} ref={scrollRef}>
+        <div
+          className={`${styles.slider} ${cardSize === 'large' ? styles.largeCards : ''}`}
+          ref={scrollRef}
+        >
           {anime.slice(0, 10).map((a, i) => (
             <div key={`${a.id || a.mal_id || i}-${i}`} className={styles.slide}>
               <AnimeCard anime={a} priority={i < 4} isManga={isManga} showYear={!hideYear} />

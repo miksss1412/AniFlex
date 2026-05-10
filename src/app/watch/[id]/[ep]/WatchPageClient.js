@@ -270,9 +270,9 @@ function PlayerSurface({
         src={stream.url}
         className={styles.iframe}
         allowFullScreen
-        allow="autoplay; encrypted-media; picture-in-picture"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         referrerPolicy="no-referrer"
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-orientation-lock"
         title={`${title} - Episode ${episode}`}
       />
     );

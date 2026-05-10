@@ -30,7 +30,7 @@ export async function getReadableMangaChapters(manga) {
 
   for (const provider of getChapterProviders()) {
     try {
-      const series = await provider.findSeries(manga.title);
+      const series = await provider.findSeries(manga);
       if (!series) {
         attempts.push({ provider: provider.id, status: 'not_found' });
         continue;
@@ -96,7 +96,7 @@ export async function getReadableMangaPages(manga, chapterId, providerId = 'comi
 
   try {
     const pages = await provider.getPages(chapterId);
-    const series = await provider.findSeries(manga.title);
+    const series = await provider.findSeries(manga);
     const chapters = series ? await provider.getChapters(series.id) : [];
     const currentChapter = chapters.find(chapter => chapter.id === chapterId);
 
@@ -140,8 +140,8 @@ function createComickSourceProvider() {
   return {
     id: 'comick_source',
     label: PROVIDER_LABELS.comick_source,
-    async findSeries(titleObj) {
-      const titles = getTitleCandidates(titleObj);
+    async findSeries(manga) {
+      const titles = getTitleCandidates(manga);
 
       for (const title of titles) {
         for (const source of COMICK_SOURCE_IDS) {
@@ -150,7 +150,7 @@ function createComickSourceProvider() {
             body: { query: title, source },
           });
           const results = data?.results || [];
-          const match = pickBestTitleMatch(results, title, item => item.title);
+          const match = pickBestTitleMatch(results, title, item => item.title, titles);
 
           if (match?.url) {
             return {
@@ -204,13 +204,13 @@ function createGoMangaProvider() {
   return {
     id: 'gomanga',
     label: PROVIDER_LABELS.gomanga,
-    async findSeries(titleObj) {
-      const titles = getTitleCandidates(titleObj);
+    async findSeries(manga) {
+      const titles = getTitleCandidates(manga);
 
       for (const title of titles) {
         const data = await fetchJson(`${GOMANGA_API_BASE}/api/search/${encodeURIComponent(title)}`);
         const results = data?.manga || [];
-        const match = pickBestTitleMatch(results, title, item => item.title);
+        const match = pickBestTitleMatch(results, title, item => item.title, titles);
         if (match?.id) {
           return { id: match.id, title: match.title };
         }
@@ -257,13 +257,13 @@ function createXBatoProvider() {
   return {
     id: 'xbato',
     label: PROVIDER_LABELS.xbato,
-    async findSeries(titleObj) {
-      const titles = getTitleCandidates(titleObj);
+    async findSeries(manga) {
+      const titles = getTitleCandidates(manga);
 
       for (const title of titles) {
         const data = await fetchJson(`${XBATO_API_BASE}/search?query=${encodeURIComponent(title)}`);
         const englishResults = (data?.data || []).filter(isEnglishXBatoResult);
-        const match = pickBestTitleMatch(englishResults, title, item => item.title);
+        const match = pickBestTitleMatch(englishResults, title, item => item.title, titles);
         if (match?.url_detail) {
           return { id: base64ToBase64Url(match.url_detail), title: match.title };
         }
@@ -304,13 +304,13 @@ function createMangaHookProvider() {
   return {
     id: 'mangahook',
     label: PROVIDER_LABELS.mangahook,
-    async findSeries(titleObj) {
-      const titles = getTitleCandidates(titleObj);
+    async findSeries(manga) {
+      const titles = getTitleCandidates(manga);
 
       for (const title of titles) {
         const data = await fetchJson(`${MANGAHOOK_API_BASE}/search/${encodeURIComponent(title)}?page=1`);
         const results = data?.mangaList || data?.searchData || [];
-        const match = pickBestTitleMatch(results, title, item => item.title || item.name);
+        const match = pickBestTitleMatch(results, title, item => item.title || item.name, titles);
         if (match?.id) {
           return { id: match.id, title: match.title || match.name };
         }
@@ -412,14 +412,34 @@ async function fetchText(url) {
   }
 }
 
-function getTitleCandidates(titleObj = {}) {
-  return [
+function getTitleCandidates(mangaOrTitle = {}) {
+  const titleObj = mangaOrTitle.title && typeof mangaOrTitle.title === 'object'
+    ? mangaOrTitle.title
+    : mangaOrTitle;
+  const synonyms = Array.isArray(mangaOrTitle.synonyms)
+    ? mangaOrTitle.synonyms
+    : Array.isArray(mangaOrTitle.title_synonyms)
+      ? mangaOrTitle.title_synonyms
+      : [];
+
+  const candidates = [
     titleObj.english,
     titleObj.romaji,
+    titleObj.userPreferred,
+    ...synonyms,
     titleObj.native,
-  ]
+  ];
+
+  const seen = new Set();
+  return candidates
+    .map(title => String(title || '').trim())
     .filter(Boolean)
-    .filter((title, index, titles) => titles.indexOf(title) === index);
+    .filter(title => {
+      const key = normalizeTitle(title);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 function isEnglishXBatoResult(item) {
@@ -431,28 +451,83 @@ function isEnglishLanguage(language) {
   return ['en', 'eng', 'english'].includes(String(language || '').trim().toLowerCase());
 }
 
-function pickBestTitleMatch(items, query, getTitle) {
+function pickBestTitleMatch(items, query, getTitle, candidateTitles = [query]) {
   if (!items.length) return null;
 
-  const normalizedQuery = normalizeTitle(query);
+  const normalizedCandidates = candidateTitles
+    .map(normalizeTitle)
+    .filter(Boolean);
   const scored = items
     .map(item => {
       const title = getTitle(item);
-      const normalizedTitle = normalizeTitle(title);
-      const altTitles = item.attributes?.altTitles || item.alternative_names || [];
-      const altScore = altTitles.some(alt => normalizeTitle(typeof alt === 'string' ? alt : Object.values(alt || {})[0]) === normalizedQuery)
-        ? 0
-        : 10;
+      const searchableTitles = [title, ...getAlternativeTitles(item)]
+        .map(normalizeTitle)
+        .filter(Boolean);
 
       let score = 20;
-      if (normalizedTitle === normalizedQuery) score = 0;
-      else if (normalizedTitle.includes(normalizedQuery) || normalizedQuery.includes(normalizedTitle)) score = 5;
+      for (const normalizedTitle of searchableTitles) {
+        for (const candidate of normalizedCandidates) {
+          if (normalizedTitle === candidate) score = Math.min(score, 0);
+          else if (normalizedTitle.includes(candidate) || candidate.includes(normalizedTitle)) score = Math.min(score, 5);
+          else if (titleSimilarity(normalizedTitle, candidate) >= 0.88) score = Math.min(score, 8);
+        }
+      }
 
-      return { item, score: Math.min(score, altScore) };
+      return { item, score };
     })
     .sort((a, b) => a.score - b.score);
 
-  return scored[0]?.score <= 10 ? scored[0].item : items[0];
+  return scored[0]?.score <= 10 ? scored[0].item : null;
+}
+
+function getAlternativeTitles(item = {}) {
+  return [
+    item.attributes?.altTitles,
+    item.alternative_names,
+    item.altNames,
+    item.alt_names,
+    item.otherNames,
+    item.synonyms,
+  ]
+    .flatMap(value => Array.isArray(value) ? value : value ? [value] : [])
+    .flatMap(value => {
+      if (typeof value === 'string') return value.split(/[,;|]/);
+      if (value && typeof value === 'object') return Object.values(value);
+      return [];
+    });
+}
+
+function titleSimilarity(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+
+  const longer = a.length >= b.length ? a : b;
+  const shorter = a.length >= b.length ? b : a;
+  if (!longer.length) return 1;
+
+  return (longer.length - levenshteinDistance(longer, shorter)) / longer.length;
+}
+
+function levenshteinDistance(a, b) {
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+
+  for (let i = 0; i < a.length; i += 1) {
+    let last = i;
+    previous[0] = i + 1;
+
+    for (let j = 0; j < b.length; j += 1) {
+      const old = previous[j + 1];
+      const cost = a[i] === b[j] ? 0 : 1;
+      previous[j + 1] = Math.min(
+        previous[j + 1] + 1,
+        previous[j] + 1,
+        last + cost
+      );
+      last = old;
+    }
+  }
+
+  return previous[b.length];
 }
 
 function normalizeTitle(title = '') {

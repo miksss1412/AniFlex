@@ -290,12 +290,13 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
   `;
   
   // Clean up variables
+  const normalizedSort = sort === 'SEARCH_MATCH' ? 'POPULARITY_DESC' : sort;
   const variables = { 
     page, 
     q: q ? q.trim() : undefined, 
     genres: (genres && genres.length > 0) ? genres : undefined,
     // Note: AniList errors if sort is SEARCH_MATCH but search is null/undefined
-    sort: q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort === 'SEARCH_MATCH' ? 'POPULARITY_DESC' : sort]
+    sort: q ? ['SEARCH_MATCH', normalizedSort] : [normalizedSort]
   };
   
   if (type) variables.format = type;
@@ -436,6 +437,7 @@ const MANGA_QUERY_FIELDS = `
   id
   idMal
   title { romaji english native }
+  synonyms
   coverImage { extraLarge large color }
   bannerImage
   averageScore
@@ -507,24 +509,28 @@ export async function getTopManga(page = 1, perPage = 20) {
   return data?.Page?.media || [];
 }
 
-export async function searchManga(q, { page = 1, genres = [], sort = 'POPULARITY_DESC' } = {}) {
+export async function searchManga(q, { page = 1, genres = [], format = '', status = '', sort = 'POPULARITY_DESC' } = {}) {
   const QUERY = `
-    query ($page: Int, $q: String, $genres: [String], $sort: [MediaSort]) {
+    query ($page: Int, $q: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort]) {
       Page(page: $page, perPage: 24) {
         pageInfo { total currentPage lastPage hasNextPage }
-        media(search: $q, genre_in: $genres, sort: $sort, type: MANGA, isAdult: false) {
+        media(search: $q, genre_in: $genres, format: $format, status: $status, sort: $sort, type: MANGA, isAdult: false) {
           ${MANGA_QUERY_FIELDS}
           description(asHtml: false)
         }
       }
     }
   `;
+  const normalizedSort = sort === 'SEARCH_MATCH' ? 'POPULARITY_DESC' : sort;
   const variables = { 
     page, 
     q: q ? q.trim() : undefined, 
     genres: (genres && genres.length > 0) ? genres : undefined,
-    sort: q ? ['SEARCH_MATCH', 'POPULARITY_DESC'] : [sort]
+    sort: q ? ['SEARCH_MATCH', normalizedSort] : [normalizedSort]
   };
+  if (format) variables.format = format;
+  if (status) variables.status = status;
+
   const data = await anilistFetch(QUERY, variables);
   return { 
     results: data?.Page?.media || [], 

@@ -33,24 +33,28 @@ export default async function MangaPage() {
             anime={trendingManga}
             viewMoreHref="/search?type=manga&filter=trending"
             isManga={true}
+            cardSize="large"
           />
           <AnimeSection
             title="Recently Updated"
             anime={recentManga}
             viewMoreHref="/search?type=manga&filter=recent"
             isManga={true}
+            cardSize="large"
           />
           <AnimeSection
             title="Most Popular"
             anime={popularManga}
             viewMoreHref="/search?type=manga&filter=popular"
             isManga={true}
+            cardSize="large"
           />
           <AnimeSection
             title="Top Rated"
             anime={topManga}
             viewMoreHref="/search?type=manga&filter=top"
             isManga={true}
+            cardSize="large"
           />
         </div>
       </main>

@@ -169,7 +169,9 @@ export default function Navbar() {
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoIcon}>▶</span>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" className={styles.logoIcon}>
+            <path d="M8 5v14l11-7z"/>
+          </svg>
           <span>Ani<span className={styles.logoAccent}>Flex</span></span>
         </Link>
 
@@ -181,7 +183,10 @@ export default function Navbar() {
         {/* Search */}
         <form onSubmit={handleSearch} className={styles.searchForm}>
           <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>🔍</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={styles.searchIcon}>
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
             <input
               ref={inputRef}
               id="navbar-search"

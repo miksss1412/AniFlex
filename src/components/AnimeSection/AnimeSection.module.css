@@ -124,18 +124,28 @@
   width: 160px;
 }
 
+.largeCards .slide {
+  flex-basis: 190px;
+  width: 190px;
+}
+
 @media (max-width: 1400px) {
   .slide { flex: 0 0 150px; width: 150px; }
+  .largeCards .slide { flex-basis: 180px; width: 180px; }
 }
 @media (max-width: 1100px) {
   .slide { flex: 0 0 140px; width: 140px; }
+  .largeCards .slide { flex-basis: 170px; width: 170px; }
 }
 @media (max-width: 850px) {
   .slide { flex: 0 0 130px; width: 130px; }
+  .largeCards .slide { flex-basis: 155px; width: 155px; }
 }
 @media (max-width: 600px) {
   .slide { flex: 0 0 140px; width: 140px; }
+  .largeCards .slide { flex-basis: 150px; width: 150px; }
 }
 @media (max-width: 450px) {
   .slide { flex: 0 0 130px; width: 130px; }
+  .largeCards .slide { flex-basis: 140px; width: 140px; }
 }
