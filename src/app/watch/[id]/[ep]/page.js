@@ -1,4 +1,4 @@
-import { getAnimeById, getAnilistData } from '@/lib/api';
+import { getAnimeById } from '@/lib/api';
 import WatchPageClient from './WatchPageClient';
 
 export async function generateMetadata({ params }) {
@@ -13,17 +13,14 @@ export async function generateMetadata({ params }) {
 
 export default async function WatchPage({ params }) {
   const { id, ep } = await params;
-  const [detail, extra] = await Promise.all([
-    getAnimeById(id),
-    getAnilistData(id),
-  ]);
+  const detail = await getAnimeById(id);
 
   const { anime, episodes } = detail;
   
   return (
     <WatchPageClient
       animeId={id}
-      anilistId={extra?.id}
+      anilistId={anime?.anilist_id}
       episode={ep}
       anime={anime}
       episodes={episodes || []}

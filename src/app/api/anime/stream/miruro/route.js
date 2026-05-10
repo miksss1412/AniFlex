@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 const PROVIDER_ORDER = ['kiwi', 'hop', 'bee', 'zoro', 'animekai', 'jet', 'gogo', 'arc'];
 const CATEGORY_ORDER = ['sub', 'dub'];
+const PROVIDER_PATTERN = /^[a-z0-9-]{1,32}$/i;
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -16,6 +17,18 @@ export async function GET(request) {
 
   if (!anilistId) {
     return NextResponse.json({ error: 'AniList ID is required' }, { status: 400 });
+  }
+
+  if (!isPositiveInteger(anilistId) || !Number.isInteger(episode) || episode < 1 || episode > 10000) {
+    return NextResponse.json({ error: 'Invalid AniList ID or episode' }, { status: 400 });
+  }
+
+  if (preferredProvider && !PROVIDER_PATTERN.test(preferredProvider)) {
+    return NextResponse.json({ error: 'Invalid provider' }, { status: 400 });
+  }
+
+  if (preferredCategory && !CATEGORY_ORDER.includes(preferredCategory)) {
+    return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
   }
 
   try {
@@ -195,4 +208,9 @@ function unique(values) {
 
 function qualityValue(quality) {
   return Number(String(quality).match(/\d+/)?.[0]) || 0;
+}
+
+function isPositiveInteger(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0;
 }

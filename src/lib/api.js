@@ -73,6 +73,7 @@ const ANIME_QUERY_FIELDS = `
   episodes
   status
   format
+  countryOfOrigin
   season
   seasonYear
   genres
@@ -153,13 +154,110 @@ export async function getRecentAnime(page = 1, perPage = 20) {
 }
 
 export async function getSchedules() {
-  // Get anime airing in the next 24 hours
-  const now = Math.floor(Date.now() / 1000);
-  const tomorrow = now + 86400;
+  // Fetch each visible day separately so later days are not pushed out by
+  // AniList's per-page cap when many shows air early in the week.
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+
+  const dayVariables = Array.from({ length: 8 }, (_, index) => {
+    const dayStart = new Date(start);
+    dayStart.setDate(start.getDate() + index);
+
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayStart.getDate() + 1);
+
+    return {
+      start: Math.floor(dayStart.getTime() / 1000),
+      end: Math.floor(dayEnd.getTime() / 1000),
+    };
+  });
+
   const QUERY = `
-    query ($now: Int, $tomorrow: Int) {
-      Page(page: 1, perPage: 20) {
-        airingSchedules(airingAt_greater: $now, airingAt_lesser: $tomorrow, sort: TIME) {
+    query (
+      $day0Start: Int, $day0End: Int,
+      $day1Start: Int, $day1End: Int,
+      $day2Start: Int, $day2End: Int,
+      $day3Start: Int, $day3End: Int,
+      $day4Start: Int, $day4End: Int,
+      $day5Start: Int, $day5End: Int,
+      $day6Start: Int, $day6End: Int,
+      $day7Start: Int, $day7End: Int
+    ) {
+      day0: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day0Start, airingAt_lesser: $day0End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day1: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day1Start, airingAt_lesser: $day1End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day2: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day2Start, airingAt_lesser: $day2End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day3: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day3Start, airingAt_lesser: $day3End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day4: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day4Start, airingAt_lesser: $day4End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day5: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day5Start, airingAt_lesser: $day5End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day6: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day6Start, airingAt_lesser: $day6End, sort: TIME) {
+          id
+          airingAt
+          episode
+          media {
+            ${ANIME_QUERY_FIELDS}
+          }
+        }
+      }
+      day7: Page(page: 1, perPage: 50) {
+        airingSchedules(airingAt_greater: $day7Start, airingAt_lesser: $day7End, sort: TIME) {
+          id
+          airingAt
+          episode
           media {
             ${ANIME_QUERY_FIELDS}
           }
@@ -167,8 +265,16 @@ export async function getSchedules() {
       }
     }
   `;
-  const data = await anilistFetch(QUERY, { now, tomorrow });
-  return data?.Page?.airingSchedules?.map(item => item.media) || [];
+  const variables = dayVariables.reduce((vars, day, index) => {
+    vars[`day${index}Start`] = day.start;
+    vars[`day${index}End`] = day.end;
+    return vars;
+  }, {});
+
+  const data = await anilistFetch(QUERY, variables);
+  return Object.keys(data || {})
+    .sort()
+    .flatMap(key => data?.[key]?.airingSchedules || []);
 }
 
 export async function searchAnime(q, { page = 1, genres = [], type = '', status = '', sort = 'POPULARITY_DESC' } = {}) {
@@ -250,7 +356,10 @@ export async function getAnimeById(id) {
   const AL = data.Media;
   
   const mappedAnime = {
+    anilist_id: AL.id,
     mal_id: AL.idMal || id,
+    bannerImage: AL.bannerImage,
+    coverImage: AL.coverImage,
     images: { jpg: { large_image_url: AL.coverImage?.extraLarge || AL.coverImage?.large } },
     title_english: AL.title?.english,
     title: AL.title?.romaji || AL.title?.english,
@@ -493,6 +602,7 @@ export async function getAnilistTrending(page = 1, perPage = 10) {
           season
           seasonYear
           format
+          countryOfOrigin
           description(asHtml: false)
         }
       }

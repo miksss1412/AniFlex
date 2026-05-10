@@ -52,8 +52,8 @@ export default function AnimeDetailClient({
     fetchMore();
   }, [anime.mal_id, pagination, episodes]);
 
-  const banner     = extra?.bannerImage || null;
-  const cover      = anime.images?.jpg?.large_image_url || extra?.coverImage?.large || '';
+  const banner     = anime.bannerImage || extra?.bannerImage || null;
+  const cover      = anime.images?.jpg?.large_image_url || anime.coverImage?.extraLarge || anime.coverImage?.large || extra?.coverImage?.large || '';
   const title      = anime.title_english || anime.title || '';
   const synopsis   = (anime.synopsis || extra?.description || '').replace(/\n/g, '<br />');
   const score      = anime.score;

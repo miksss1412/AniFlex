@@ -11,6 +11,10 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Title is required' }, { status: 400 });
   }
 
+  if (title.length > 160 || !isValidEpisode(episode) || (anilistId && !isPositiveInteger(anilistId))) {
+    return NextResponse.json({ error: 'Invalid stream request' }, { status: 400 });
+  }
+
   try {
     const streams = await scrapeAnimePahe(title, episode, { anilistId });
 
@@ -28,4 +32,14 @@ export async function GET(request) {
     console.error('[AnimePahe API] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+function isValidEpisode(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 1 && number <= 10000;
+}
+
+function isPositiveInteger(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0;
 }

@@ -11,10 +11,16 @@ import {
 } from '@/lib/api';
 import HeroSection from '@/components/HeroSection/HeroSection';
 import AnimeSection from '@/components/AnimeSection/AnimeSection';
+import BroadcastSchedule from '@/components/BroadcastSchedule/BroadcastSchedule';
 import styles from './page.module.css';
 
 // Small helper to stagger calls and avoid 429
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
+const HOMEPAGE_POOL_SIZE = 50;
+
+const excludeChineseAnime = (items = []) => (
+  items.filter(item => (item?.media || item)?.countryOfOrigin !== 'CN')
+);
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -26,19 +32,19 @@ export const metadata = {
 
 export default async function HomePage() {
   // Stagger Jikan calls to respect the 3 req/sec limit
-  const heroAnime = await getAnilistTrending(1, 5);
+  const heroAnime = excludeChineseAnime(await getAnilistTrending(1, 15)).slice(0, 5);
   await delay(400);
-  const trendingList = await getTrendingAnime();
+  const trendingList = excludeChineseAnime(await getTrendingAnime(1, HOMEPAGE_POOL_SIZE));
   await delay(400);
-  const recentList = await getRecentAnime();
+  const recentList = excludeChineseAnime(await getRecentAnime(1, HOMEPAGE_POOL_SIZE));
   await delay(400);
-  const seasonalList = await getSeasonalAnime();
+  const seasonalList = excludeChineseAnime(await getSeasonalAnime(1, HOMEPAGE_POOL_SIZE));
   await delay(400);
-  const popularList = await getPopularAnime();
+  const popularList = excludeChineseAnime(await getPopularAnime(1, HOMEPAGE_POOL_SIZE));
   await delay(400);
-  const upcomingList = await getUpcomingAnime();
+  const upcomingList = excludeChineseAnime(await getUpcomingAnime(1, HOMEPAGE_POOL_SIZE));
   await delay(400);
-  const scheduleList = await getSchedules();
+  const scheduleList = excludeChineseAnime(await getSchedules());
 
   return (
     <>
@@ -71,13 +77,7 @@ export default async function HomePage() {
             anime={upcomingList}
             viewMoreHref="/search?filter=upcoming"
           />
-          <AnimeSection
-            title="Broadcast Schedules"
-            anime={scheduleList}
-            // No direct filter for schedules in current search yet, 
-            // but we can link to Browse for now
-            viewMoreHref="/search"
-          />
+          <BroadcastSchedule schedules={scheduleList} />
         </div>
       </main>
     </>

@@ -271,6 +271,8 @@ function PlayerSurface({
         className={styles.iframe}
         allowFullScreen
         allow="autoplay; encrypted-media; picture-in-picture"
+        referrerPolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
         title={`${title} - Episode ${episode}`}
       />
     );

@@ -1,0 +1,394 @@
+.page {
+  min-height: 100vh;
+  padding-bottom: 80px;
+  background:
+    linear-gradient(180deg, rgba(18, 14, 43, 0.42) 0%, rgba(3, 1, 10, 0) 34%),
+    var(--bg-void);
+}
+
+.pagePadded {
+  padding-top: 88px;
+}
+
+.hero {
+  height: 520px;
+  padding-top: 140px;
+  background:
+    linear-gradient(to right, rgba(3, 1, 10, 0.92), rgba(3, 1, 10, 0.34)),
+    var(--bg-base);
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 48px;
+  align-items: end;
+}
+
+.heroText {
+  display: flex;
+  max-width: 680px;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pillRow,
+.lineStack,
+.sectionHeader,
+.watchTop,
+.readerNav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lineStack {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.pill {
+  width: 84px;
+  height: 26px;
+  border-radius: var(--radius-full);
+}
+
+.titleLine {
+  width: min(100%, 520px);
+  height: 54px;
+}
+
+.textLine {
+  height: 16px;
+}
+
+.shortLine {
+  width: 42%;
+}
+
+.mediumLine {
+  width: 68%;
+}
+
+.longLine {
+  width: 88%;
+}
+
+.buttonLine {
+  width: 142px;
+  height: 42px;
+  border-radius: var(--radius-full);
+}
+
+.poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-lg);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 54px;
+  padding-top: 56px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sectionHeader {
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  width: 220px;
+  height: 30px;
+}
+
+.sectionAction {
+  width: 82px;
+  height: 24px;
+  border-radius: var(--radius-full);
+}
+
+.cardRow,
+.grid {
+  display: grid;
+  gap: 18px;
+}
+
+.cardRow {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.grid {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardPoster {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-lg);
+}
+
+.cardTitle {
+  width: 90%;
+  height: 16px;
+}
+
+.cardSub {
+  width: 56%;
+  height: 14px;
+}
+
+.detailBanner {
+  height: 340px;
+  background: var(--bg-base);
+}
+
+.detailLayout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 32px;
+  margin-top: -120px;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel {
+  min-height: 112px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  background: rgba(18, 14, 43, 0.58);
+}
+
+.detailMain {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: 24px;
+}
+
+.genreRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tabs {
+  display: flex;
+  width: fit-content;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.tab {
+  width: 94px;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.episodeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.episode {
+  height: 66px;
+  border-radius: var(--radius-md);
+}
+
+.watchPage {
+  min-height: 100vh;
+  padding-top: 86px;
+  padding-bottom: 72px;
+  background:
+    linear-gradient(180deg, rgba(18, 14, 43, 0.46) 0%, rgba(3, 1, 10, 0) 34%),
+    var(--bg-void);
+}
+
+.watchLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: start;
+}
+
+.watchColumn,
+.watchSidebar,
+.reader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.watchTitle {
+  width: min(72%, 620px);
+  height: 38px;
+}
+
+.playerShell,
+.watchSidebar {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: var(--radius-lg);
+  background: rgba(13, 8, 32, 0.82);
+}
+
+.playerTop,
+.playerBottom {
+  height: 58px;
+  background: rgba(7, 4, 19, 0.86);
+}
+
+.playerSurface {
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.watchSidebar {
+  padding: 18px;
+}
+
+.episodeList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.episodeItem {
+  height: 52px;
+  border-radius: var(--radius-md);
+}
+
+.searchHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filterRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.filter {
+  height: 64px;
+  border-radius: var(--radius-md);
+}
+
+.readerPage {
+  min-height: 100vh;
+  padding-top: 64px;
+  background: #050505;
+}
+
+.readerNav {
+  position: fixed;
+  z-index: var(--z-nav);
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(7, 4, 19, 0.62);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+
+.readerButton {
+  width: 120px;
+  height: 36px;
+  border-radius: var(--radius-full);
+}
+
+.readerTitle {
+  width: min(40vw, 360px);
+  height: 22px;
+}
+
+.readerPages {
+  width: min(100%, 1000px);
+  margin: 0 auto;
+}
+
+.readerPageBlock {
+  height: 820px;
+  border-radius: 0;
+}
+
+@media (max-width: 1100px) {
+  .cardRow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .watchLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    height: 460px;
+  }
+
+  .heroInner,
+  .detailLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .heroInner {
+    gap: 24px;
+  }
+
+  .heroInner .poster {
+    display: none;
+  }
+
+  .detailLayout {
+    margin-top: -80px;
+  }
+
+  .sidebar {
+    align-items: center;
+  }
+
+  .sidebar .poster {
+    width: 180px;
+  }
+}
+
+@media (max-width: 700px) {
+  .cardRow,
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterRow {
+    grid-template-columns: 1fr;
+  }
+
+  .readerButton {
+    width: 40px;
+  }
+}

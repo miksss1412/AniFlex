@@ -17,6 +17,18 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Title or HiAnime ID is required' }, { status: 400 });
   }
 
+  if ((title && title.length > 160) || !isValidEpisode(episode) || (anilistId && !isPositiveInteger(anilistId))) {
+    return NextResponse.json({ error: 'Invalid stream request' }, { status: 400 });
+  }
+
+  if (server && !/^[a-z0-9-]{1,32}$/i.test(server)) {
+    return NextResponse.json({ error: 'Invalid server' }, { status: 400 });
+  }
+
+  if (category && !['sub', 'dub'].includes(category)) {
+    return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+  }
+
   if (process.env.ENABLE_HIANIME_SCRAPER !== 'true') {
     return NextResponse.json(
       { error: 'Native HiAnime scraper is disabled. Set ENABLE_HIANIME_SCRAPER=true to enable it.' },
@@ -44,4 +56,14 @@ export async function GET(request) {
     console.error('[HiAnime API] Error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
+}
+
+function isValidEpisode(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 1 && number <= 10000;
+}
+
+function isPositiveInteger(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0;
 }
