@@ -13,25 +13,48 @@ export default function AnimeSection({
   cardSize = 'default',
 }) {
   const scrollRef = useRef(null);
+  const canScrollLeftRef = useRef(false);
+  const canScrollRightRef = useRef(true);
+  const scrollFrameRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const checkScroll = () => {
+    scrollFrameRef.current = null;
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setCanScrollLeft(scrollLeft > 10);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+      const nextCanScrollLeft = scrollLeft > 10;
+      const nextCanScrollRight = scrollLeft < scrollWidth - clientWidth - 10;
+
+      if (canScrollLeftRef.current !== nextCanScrollLeft) {
+        canScrollLeftRef.current = nextCanScrollLeft;
+        setCanScrollLeft(nextCanScrollLeft);
+      }
+
+      if (canScrollRightRef.current !== nextCanScrollRight) {
+        canScrollRightRef.current = nextCanScrollRight;
+        setCanScrollRight(nextCanScrollRight);
+      }
     }
   };
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) {
-      el.addEventListener('scroll', checkScroll);
+      const onScroll = () => {
+        if (scrollFrameRef.current === null) {
+          scrollFrameRef.current = window.requestAnimationFrame(checkScroll);
+        }
+      };
+
+      el.addEventListener('scroll', onScroll, { passive: true });
       // Check after initial render and small delay for content loading
       const timer = setTimeout(checkScroll, 500);
       return () => {
-        el.removeEventListener('scroll', checkScroll);
+        el.removeEventListener('scroll', onScroll);
+        if (scrollFrameRef.current !== null) {
+          window.cancelAnimationFrame(scrollFrameRef.current);
+        }
         clearTimeout(timer);
       };
     }

@@ -1,21 +1,36 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './BackToTop.module.css';
 
 export default function BackToTop() {
   const [isVisible, setIsVisible] = useState(false);
+  const isVisibleRef = useRef(false);
+  const scrollFrameRef = useRef(null);
 
   useEffect(() => {
     const toggleVisibility = () => {
-      if (window.pageYOffset > 300) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
+      scrollFrameRef.current = null;
+      const nextVisible = window.pageYOffset > 300;
+      if (isVisibleRef.current !== nextVisible) {
+        isVisibleRef.current = nextVisible;
+        setIsVisible(nextVisible);
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
-    return () => window.removeEventListener('scroll', toggleVisibility);
+    const onScroll = () => {
+      if (scrollFrameRef.current === null) {
+        scrollFrameRef.current = window.requestAnimationFrame(toggleVisibility);
+      }
+    };
+
+    toggleVisibility();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
   }, []);
 
   const scrollToTop = () => {

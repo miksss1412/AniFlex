@@ -71,11 +71,33 @@ export default function Navbar() {
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
   const dropdownRef = useRef(null);
+  const scrolledRef = useRef(false);
+  const scrollFrameRef = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 30);
+    const updateScrolled = () => {
+      scrollFrameRef.current = null;
+      const nextScrolled = window.scrollY > 30;
+      if (scrolledRef.current !== nextScrolled) {
+        scrolledRef.current = nextScrolled;
+        setScrolled(nextScrolled);
+      }
+    };
+
+    const onScroll = () => {
+      if (scrollFrameRef.current === null) {
+        scrollFrameRef.current = window.requestAnimationFrame(updateScrolled);
+      }
+    };
+
+    updateScrolled();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => { 

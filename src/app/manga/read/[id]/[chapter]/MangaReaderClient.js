@@ -1,28 +1,47 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import styles from './MangaReader.module.css';
 
 export default function MangaReaderClient({ manga, pages, chapterId, allChapters = [], source, sourceLabel }) {
   const [showNav, setShowNav] = useState(true);
+  const showNavRef = useRef(true);
+  const scrollFrameRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    showNavRef.current = true;
     setShowNav(true);
   }, [chapterId]);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
-    const handleScroll = () => {
-      if (window.scrollY > lastScrollY && window.scrollY > 100) {
-        setShowNav(false);
-      } else {
-        setShowNav(true);
+    const updateNavVisibility = () => {
+      scrollFrameRef.current = null;
+      const currentScrollY = window.scrollY;
+      const nextShowNav = !(currentScrollY > lastScrollY && currentScrollY > 100);
+
+      if (showNavRef.current !== nextShowNav) {
+        showNavRef.current = nextShowNav;
+        setShowNav(nextShowNav);
       }
-      lastScrollY = window.scrollY;
+
+      lastScrollY = currentScrollY;
     };
+
+    const handleScroll = () => {
+      if (scrollFrameRef.current === null) {
+        scrollFrameRef.current = window.requestAnimationFrame(updateNavVisibility);
+      }
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
   }, []);
 
   // Find current chapter index and navigation targets
@@ -46,6 +65,7 @@ export default function MangaReaderClient({ manga, pages, chapterId, allChapters
     }
 
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    showNavRef.current = true;
     setShowNav(true);
   };
 
