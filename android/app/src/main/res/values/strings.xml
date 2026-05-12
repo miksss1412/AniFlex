@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AniFlex</string>
+    <string name="title_activity_main">AniFlex</string>
+    <string name="package_name">com.aniflex.app</string>
+    <string name="custom_url_scheme">com.aniflex.app</string>
+</resources>

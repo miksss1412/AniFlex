@@ -3,10 +3,13 @@ import { getMangaById } from '@/lib/api';
 import { getReadableMangaChapters } from '@/lib/mangaProviders';
 import MangaDetailClient from './MangaDetailClient';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
+
+const getCachedMangaById = cache(getMangaById);
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  const manga = await getMangaById(id);
+  const manga = await getCachedMangaById(id);
   if (!manga) return { title: 'Manga Not Found — AniFlex' };
   return {
     title: `${manga.title.english || manga.title.romaji} — AniFlex`,
@@ -16,7 +19,7 @@ export async function generateMetadata({ params }) {
 
 export default async function MangaPage({ params }) {
   const { id } = await params;
-  const manga = await getMangaById(id);
+  const manga = await getCachedMangaById(id);
 
   if (!manga) {
     notFound();

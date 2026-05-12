@@ -2,10 +2,13 @@ import Navbar from '@/components/Navbar/Navbar';
 import { getAnimeById, getAnimeRecommendations } from '@/lib/api';
 import AnimeDetailClient from './AnimeDetailClient';
 import Link from 'next/link';
+import { cache } from 'react';
+
+const getCachedAnimeById = cache(getAnimeById);
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  const { anime } = await getAnimeById(id);
+  const { anime } = await getCachedAnimeById(id);
   if (!anime) return { title: 'Anime Not Found — AniFlex' };
   return {
     title: `${anime.title_english || anime.title} — AniFlex`,
@@ -18,7 +21,7 @@ import './page.css';
 export default async function AnimePage({ params }) {
   const { id } = await params;
   const [detail, recommendations] = await Promise.allSettled([
-    getAnimeById(id),
+    getCachedAnimeById(id),
     getAnimeRecommendations(id),
   ]);
 

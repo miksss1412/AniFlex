@@ -52,11 +52,20 @@ async function anilistFetch(query, variables = {}) {
       body: JSON.stringify({ query, variables }),
       next: { revalidate: 3600 },
     });
-    if (!res.ok) throw new Error(`AniList ${res.status}`);
-    const { data } = await res.json();
+
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      if (res.status !== 404) {
+        console.warn(`AniList fetch failed: ${res.status} ${res.statusText}`);
+      }
+      return payload?.data || null;
+    }
+
+    const { data } = payload || {};
     return data;
   } catch (e) {
-    console.error('AniList fetch error:', e);
+    console.warn('AniList fetch error:', e);
     return null;
   }
 }
@@ -313,9 +322,14 @@ export async function searchAnime(q, { page = 1, genres = [], type = '', status 
 }
 
 export async function getAnimeById(id) {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    return { anime: null, episodes: [], pagination: null, characters: [], streaming: [] };
+  }
+
   const QUERY = `
-    query ($malId: Int) {
-      Media(idMal: $malId, type: ANIME) {
+    query ($id: Int, $idMal: Int) {
+      Media(id: $id, idMal: $idMal, type: ANIME) {
         id
         idMal
         title { romaji english native }
@@ -348,7 +362,12 @@ export async function getAnimeById(id) {
       }
     }
   `;
-  const data = await anilistFetch(QUERY, { malId: Number(id) });
+  const fetchBy = (variables) => anilistFetch(QUERY, variables);
+  let data = await fetchBy({ idMal: numericId });
+
+  if (!data?.Media) {
+    data = await fetchBy({ id: numericId });
+  }
   
   if (!data?.Media) {
     return { anime: null, episodes: [], pagination: null, characters: [], streaming: [] };
@@ -414,9 +433,12 @@ export async function getAnimeEpisodes(id, page = 1) {
 }
 
 export async function getAnimeRecommendations(id) {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) return [];
+
   const QUERY = `
-    query ($malId: Int) {
-      Media(idMal: $malId, type: ANIME) {
+    query ($id: Int, $idMal: Int) {
+      Media(id: $id, idMal: $idMal, type: ANIME) {
         recommendations(sort: RATING_DESC) {
           nodes {
             mediaRecommendation {
@@ -427,7 +449,13 @@ export async function getAnimeRecommendations(id) {
       }
     }
   `;
-  const data = await anilistFetch(QUERY, { malId: Number(id) });
+  const fetchBy = (variables) => anilistFetch(QUERY, variables);
+  let data = await fetchBy({ idMal: numericId });
+
+  if (!data?.Media) {
+    data = await fetchBy({ id: numericId });
+  }
+
   return data?.Media?.recommendations?.nodes?.map(n => n.mediaRecommendation).filter(Boolean).slice(0, 12) || [];
 }
 

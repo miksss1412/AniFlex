@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { unstable_cache } from 'next/cache';
 
 const COMICK_SOURCE_API_BASE = (process.env.COMICK_SOURCE_API_BASE || 'https://comick-source-api.notaspider.dev').replace(/\/$/, '');
 const XBATO_API_BASE = (process.env.XBATO_API_BASE || 'https://xbato-api.hanifu.id').replace(/\/$/, '');
@@ -15,7 +16,9 @@ const COMICK_SOURCE_IDS = (process.env.COMICK_SOURCE_IDS || 'MangaKatana,mangare
   .filter(Boolean);
 const ENABLE_COMICK_SOURCE_PROVIDER = process.env.ENABLE_COMICK_SOURCE_PROVIDER !== 'false';
 const ENABLE_GOMANGA_PROVIDER = process.env.ENABLE_GOMANGA_PROVIDER !== 'false';
-const MANGA_PROVIDER_TIMEOUT_MS = Number(process.env.MANGA_PROVIDER_TIMEOUT_MS || 8000);
+const MANGA_PROVIDER_TIMEOUT_MS = Number(process.env.MANGA_PROVIDER_TIMEOUT_MS || 5000);
+const CHAPTER_LIST_REVALIDATE_SECONDS = 21600;
+const PAGE_LIST_REVALIDATE_SECONDS = 3600;
 
 const PROVIDER_LABELS = {
   comick_source: 'Comick Source',
@@ -25,54 +28,79 @@ const PROVIDER_LABELS = {
 };
 
 export async function getReadableMangaChapters(manga) {
+  const mangaKey = buildMangaCacheKey(manga);
+
+  try {
+    return await getCachedReadableMangaChapters(mangaKey);
+  } catch {
+    return getReadableMangaChaptersUncached(mangaKey);
+  }
+}
+
+async function getReadableMangaChaptersUncached(mangaKey, onlyProviderId = null) {
   const attempts = [];
-  let bestSource = null;
 
   for (const provider of getChapterProviders()) {
-    try {
-      const series = await provider.findSeries(manga);
-      if (!series) {
-        attempts.push({ provider: provider.id, status: 'not_found' });
-        continue;
-      }
+    if (onlyProviderId && provider.id !== onlyProviderId) continue;
 
-      const chapters = await provider.getChapters(series.id);
-      if (chapters.length > 0) {
-        const source = {
+    try {
+      const source = await getProviderChapterSource(provider, mangaKey);
+      attempts.push(source.attempt);
+
+      if (source.chapters.length > 0) {
+        return {
           provider: provider.id,
           providerLabel: provider.label,
-          providerSeriesId: series.id,
-          chapters,
+          providerSeriesId: source.series.id,
+          chapters: source.chapters,
+          attempts,
         };
-
-        attempts.push({
-          provider: provider.id,
-          status: 'found',
-          providerSeriesId: series.id,
-          chapterCount: chapters.length,
-        });
-
-        if (!bestSource || chapters.length > bestSource.chapters.length) {
-          bestSource = source;
-        }
-
-        continue;
       }
-
-      attempts.push({ provider: provider.id, status: 'empty', providerSeriesId: series.id });
     } catch (error) {
       console.error(`[Manga] ${provider.id} chapters error:`, error);
       attempts.push({ provider: provider.id, status: 'error' });
     }
   }
 
-  if (bestSource) {
+  return emptyChapterSource(attempts);
+}
+
+async function getProviderChapterSource(provider, mangaKey) {
+  const series = await provider.findSeries(mangaKey);
+  if (!series) {
     return {
-      ...bestSource,
-      attempts,
+      series: null,
+      chapters: [],
+      attempt: { provider: provider.id, status: 'not_found' },
     };
   }
 
+  const chapters = await provider.getChapters(series.id);
+  if (chapters.length > 0) {
+    return {
+      series,
+      chapters,
+      attempt: {
+        provider: provider.id,
+        status: 'found',
+        providerSeriesId: series.id,
+        chapterCount: chapters.length,
+      },
+    };
+  }
+
+  return {
+    series,
+    chapters,
+    attempt: {
+      provider: provider.id,
+      status: 'empty',
+      providerSeriesId: series.id,
+    },
+  };
+}
+
+function emptyChapterSource(attempts = []) {
   return {
     provider: null,
     providerLabel: null,
@@ -81,6 +109,30 @@ export async function getReadableMangaChapters(manga) {
     attempts,
   };
 }
+
+const getCachedReadableMangaChapters = unstable_cache(
+  async (mangaKey) => {
+    const source = await getReadableMangaChaptersUncached(mangaKey);
+    if (!source.chapters.length) {
+      throw new Error('No readable manga chapters found');
+    }
+    return source;
+  },
+  ['manga-chapter-list-v1'],
+  { revalidate: CHAPTER_LIST_REVALIDATE_SECONDS }
+);
+
+const getCachedProviderReadableMangaChapters = unstable_cache(
+  async (mangaKey, providerId) => {
+    const source = await getReadableMangaChaptersUncached(mangaKey, providerId);
+    if (!source.chapters.length) {
+      throw new Error(`No readable manga chapters found for ${providerId}`);
+    }
+    return source;
+  },
+  ['manga-provider-chapter-list-v1'],
+  { revalidate: CHAPTER_LIST_REVALIDATE_SECONDS }
+);
 
 export async function getReadableMangaPages(manga, chapterId, providerId = 'comick_source') {
   const requestedProvider = providerId || 'comick_source';
@@ -95,9 +147,13 @@ export async function getReadableMangaPages(manga, chapterId, providerId = 'comi
   }
 
   try {
-    const pages = await provider.getPages(chapterId);
-    const series = await provider.findSeries(manga);
-    const chapters = series ? await provider.getChapters(series.id) : [];
+    const mangaKey = buildMangaCacheKey(manga);
+    const [pages, chapterSource] = await Promise.all([
+      getCachedReadableMangaPages(provider.id, chapterId),
+      getCachedProviderReadableMangaChapters(mangaKey, provider.id)
+        .catch(() => getReadableMangaChaptersUncached(mangaKey, provider.id)),
+    ]);
+    const chapters = chapterSource.chapters || [];
     const currentChapter = chapters.find(chapter => chapter.id === chapterId);
 
     return {
@@ -119,6 +175,16 @@ export async function getReadableMangaPages(manga, chapterId, providerId = 'comi
   }
 }
 
+const getCachedReadableMangaPages = unstable_cache(
+  async (providerId, chapterId) => {
+    const provider = getProviderById(providerId);
+    if (!provider) return [];
+    return provider.getPages(chapterId);
+  },
+  ['manga-reader-pages-v1'],
+  { revalidate: PAGE_LIST_REVALIDATE_SECONDS }
+);
+
 export function getMangaProviderLabel(providerId) {
   return PROVIDER_LABELS[providerId] || providerId || 'Unknown source';
 }
@@ -134,6 +200,30 @@ function getChapterProviders() {
 
 function getProviderById(providerId) {
   return getChapterProviders().find(provider => provider.id === providerId);
+}
+
+function buildMangaCacheKey(manga = {}) {
+  const title = manga?.title && typeof manga.title === 'object' ? manga.title : {};
+  return {
+    id: manga?.id || manga?.anilist_id || manga?.mal_id || null,
+    title: {
+      english: title.english || manga?.title_english || '',
+      romaji: title.romaji || manga?.title || '',
+      userPreferred: title.userPreferred || '',
+      native: title.native || manga?.title_japanese || '',
+    },
+    synonyms: Array.isArray(manga?.synonyms)
+      ? manga.synonyms.slice(0, 10)
+      : Array.isArray(manga?.title_synonyms)
+        ? manga.title_synonyms.slice(0, 10)
+        : [],
+    providerConfig: {
+      mangahook: Boolean(MANGAHOOK_API_BASE),
+      comickSource: ENABLE_COMICK_SOURCE_PROVIDER ? COMICK_SOURCE_IDS : [],
+      gomanga: ENABLE_GOMANGA_PROVIDER,
+      xbato: true,
+    },
+  };
 }
 
 function createComickSourceProvider() {

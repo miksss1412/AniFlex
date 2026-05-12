@@ -14,16 +14,17 @@ import AnimeSection from '@/components/AnimeSection/AnimeSection';
 import BroadcastSchedule from '@/components/BroadcastSchedule/BroadcastSchedule';
 import styles from './page.module.css';
 
-// Small helper to stagger calls and avoid 429
-const delay = (ms) => new Promise(r => setTimeout(r, ms));
 const HOMEPAGE_POOL_SIZE = 50;
 
 const excludeChineseAnime = (items = []) => (
   items.filter(item => (item?.media || item)?.countryOfOrigin !== 'CN')
 );
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+const settledValue = (result, fallback = []) => (
+  result.status === 'fulfilled' ? result.value : fallback
+);
+
+export const revalidate = 3600;
 
 export const metadata = {
   title: 'AniFlex — Stream Anime Free',
@@ -31,20 +32,31 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  // Stagger Jikan calls to respect the 3 req/sec limit
-  const heroAnime = excludeChineseAnime(await getAnilistTrending(1, 15)).slice(0, 5);
-  await delay(400);
-  const trendingList = excludeChineseAnime(await getTrendingAnime(1, HOMEPAGE_POOL_SIZE));
-  await delay(400);
-  const recentList = excludeChineseAnime(await getRecentAnime(1, HOMEPAGE_POOL_SIZE));
-  await delay(400);
-  const seasonalList = excludeChineseAnime(await getSeasonalAnime(1, HOMEPAGE_POOL_SIZE));
-  await delay(400);
-  const popularList = excludeChineseAnime(await getPopularAnime(1, HOMEPAGE_POOL_SIZE));
-  await delay(400);
-  const upcomingList = excludeChineseAnime(await getUpcomingAnime(1, HOMEPAGE_POOL_SIZE));
-  await delay(400);
-  const scheduleList = excludeChineseAnime(await getSchedules());
+  const [
+    heroResult,
+    trendingResult,
+    recentResult,
+    seasonalResult,
+    popularResult,
+    upcomingResult,
+    scheduleResult,
+  ] = await Promise.allSettled([
+    getAnilistTrending(1, 15),
+    getTrendingAnime(1, HOMEPAGE_POOL_SIZE),
+    getRecentAnime(1, HOMEPAGE_POOL_SIZE),
+    getSeasonalAnime(1, HOMEPAGE_POOL_SIZE),
+    getPopularAnime(1, HOMEPAGE_POOL_SIZE),
+    getUpcomingAnime(1, HOMEPAGE_POOL_SIZE),
+    getSchedules(),
+  ]);
+
+  const heroAnime = excludeChineseAnime(settledValue(heroResult)).slice(0, 5);
+  const trendingList = excludeChineseAnime(settledValue(trendingResult));
+  const recentList = excludeChineseAnime(settledValue(recentResult));
+  const seasonalList = excludeChineseAnime(settledValue(seasonalResult));
+  const popularList = excludeChineseAnime(settledValue(popularResult));
+  const upcomingList = excludeChineseAnime(settledValue(upcomingResult));
+  const scheduleList = excludeChineseAnime(settledValue(scheduleResult));
 
   return (
     <>

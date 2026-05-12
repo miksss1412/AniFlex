@@ -9,7 +9,11 @@ import HeroSection from '@/components/HeroSection/HeroSection';
 import AnimeSection from '@/components/AnimeSection/AnimeSection';
 import styles from '../page.module.css';
 
-export const dynamic = 'force-dynamic';
+const settledValue = (result, fallback = []) => (
+  result.status === 'fulfilled' ? result.value : fallback
+);
+
+export const revalidate = 3600;
 
 export const metadata = {
   title: 'Manga — AniFlex',
@@ -17,10 +21,17 @@ export const metadata = {
 };
 
 export default async function MangaPage() {
-  const trendingManga = await getTrendingManga(1, 10);
-  const popularManga = await getPopularManga(1, 10);
-  const recentManga = await getRecentManga(1, 10);
-  const topManga = await getTopManga(1, 10);
+  const [trendingResult, popularResult, recentResult, topResult] = await Promise.allSettled([
+    getTrendingManga(1, 10),
+    getPopularManga(1, 10),
+    getRecentManga(1, 10),
+    getTopManga(1, 10),
+  ]);
+
+  const trendingManga = settledValue(trendingResult);
+  const popularManga = settledValue(popularResult);
+  const recentManga = settledValue(recentResult);
+  const topManga = settledValue(topResult);
 
   return (
     <>

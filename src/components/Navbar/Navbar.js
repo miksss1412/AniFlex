@@ -87,7 +87,10 @@ export default function Navbar() {
   // Click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (inputRef.current && !inputRef.current.contains(event.target)) {
+      const clickedInput = inputRef.current?.contains(event.target);
+      const clickedDropdown = dropdownRef.current?.contains(event.target);
+
+      if (!clickedInput && !clickedDropdown) {
         setShowSuggestions(false);
       }
     };
@@ -201,7 +204,7 @@ export default function Navbar() {
             />
             {/* Suggestions Dropdown */}
             {showSuggestions && (query.trim().length > 0) && (
-              <div className={styles.suggestionsDropdown}>
+              <div ref={dropdownRef} className={styles.suggestionsDropdown}>
                 {isSearching ? (
                   <div className={styles.suggestionItem}>Searching...</div>
                 ) : suggestions.length > 0 ? (
